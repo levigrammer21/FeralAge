@@ -826,12 +826,8 @@
       <div class="trap-status" id="trapStatus">NO TRAP SET</div>
       <div class="trap-timer" id="trapTimer"></div>
       <div id="trapContent">
-        <p class="helper-text">Set a trap and come back later.<br>Higher rarity needs higher Tamer Lv!</p>
-        <div class="trap-btns">
-          <button class="btn btn-green btn-sm" onclick="setTrap(30)">30 MIN<br>Common+</button>
-          <button class="btn btn-blue btn-sm" onclick="setTrap(120)">2 HR<br>Uncommon+</button>
-          <button class="btn btn-gold btn-sm" onclick="setTrap(480)">8 HR<br>Rare+</button>
-        </div>
+        <p class="helper-text">Set a trap and come back in 10 minutes.<br>Higher Tamer Lv improves taming odds!</p>
+        <button class="btn btn-green" onclick="setTrap()">🪤 SET TRAP</button>
       </div>
       <button id="claimBtn" class="btn btn-gold" style="display:none;" onclick="claimTrap()">🎉 CLAIM!</button>
     </div>
@@ -839,10 +835,13 @@
     <div class="section-title">📖 RARITY RATES</div>
     <div class="card">
       <div style="font-size:17px; line-height:2;">
-        <span class="rarity-common">■ Common</span> — Always catchable<br>
-        <span class="rarity-uncommon">■ Uncommon</span> — 2hr+ trap<br>
-        <span class="rarity-rare">■ Rare</span> — 8hr trap<br>
-        <span style="color:var(--text2);">Tamer Lv affects taming chance!</span>
+        <span class="rarity-common">■ Common</span> — 50% chance<br>
+        <span class="rarity-uncommon">■ Uncommon</span> — 25% chance<br>
+        <span class="rarity-rare">■ Rare</span> — 12% chance<br>
+        <span class="rarity-epic">■ Epic</span> — 5% chance<br>
+        <span class="rarity-legendary">■ Legendary</span> — 1% chance<br>
+        <span style="color:var(--red);">■ Escaped</span> — 7% fail chance<br>
+        <span style="color:var(--text2);">Tamer Lv affects taming success!</span>
       </div>
     </div>
   </div>
@@ -1066,9 +1065,9 @@ const WILD_ENEMIES = [
 ];
 
 const PLAYERS = [
-  { id: 'player1', name: 'Dad', icon: '👨', pin: '1234' },
-  { id: 'player2', name: 'Son 1', icon: '👦', pin: '1111' },
-  { id: 'player3', name: 'Son 2', icon: '👦', pin: '2222' },
+  { id: 'player1', name: 'Dad', icon: '👨', pin: '3214' },
+  { id: 'player2', name: 'Evan', icon: '👦', pin: '0417' },
+  { id: 'player3', name: 'Reid', icon: '👦', pin: '0119' },
 ];
 
 // ===== GAME STATE =====
@@ -1578,31 +1577,38 @@ function renderTrap() {
   }, 1000);
 }
 
-window.setTrap = async function(minutes) {
-  if ((playerData.ferals || []).filter(f => f.alive !== false).length === 0) {
-    showNotif('You need at least 1 Feral to set a trap!', 'var(--red)');
-    return;
-  }
-  playerData.trap = { endTime: Date.now() + minutes * 60 * 1000, minutes };
+window.setTrap = async function() {
+  playerData.trap = { endTime: Date.now() + 10 * 60 * 1000, minutes: 10 };
   await savePlayerData();
   renderTrap();
-  showNotif(`🪤 Trap set for ${minutes >= 60 ? minutes/60 + ' hr' : minutes + ' min'}!`);
+  showNotif(`🪤 Trap set! Come back in 10 minutes!`);
 };
 
 window.claimTrap = async function() {
   const trap = playerData.trap;
   if (!trap) return;
 
-  // Roll rarity based on trap duration
+  // Unified rarity roll with fail chance
   const roll = Math.random() * 100;
   let rarity;
-  if (trap.minutes >= 480) {
-    rarity = roll < 5 ? 'legendary' : roll < 15 ? 'epic' : roll < 35 ? 'rare' : roll < 60 ? 'uncommon' : 'common';
-  } else if (trap.minutes >= 120) {
-    rarity = roll < 20 ? 'rare' : roll < 50 ? 'uncommon' : 'common';
-  } else {
-    rarity = roll < 15 ? 'uncommon' : 'common';
-  }
+  if (roll < 7) {
+    // Trap failed — nothing caught
+    playerData.trap = null;
+    await savePlayerData();
+    renderTrap();
+    openModal(`
+      <div class="modal-title">TRAP FAILED</div>
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:56px;">💨</div>
+        <div style="font-size:20px;color:var(--text2);margin-top:12px;">Whatever was here... got away.<br>Better luck next time!</div>
+      </div>
+    `);
+    return;
+  } else if (roll < 57) { rarity = 'common'; }
+  else if (roll < 82) { rarity = 'uncommon'; }
+  else if (roll < 94) { rarity = 'rare'; }
+  else if (roll < 99) { rarity = 'epic'; }
+  else { rarity = 'legendary'; }
 
   // Find ferals matching rarity
   const matching = Object.values(FERALS_DATA).filter(f => f.rarity === rarity);
