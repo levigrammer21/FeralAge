@@ -1,0 +1,38 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+  <style>@keyframes glowtail-shimmer { 0%,100%{opacity:0.4} 50%{opacity:0.9} }</style>
+  <rect x="3" y="0" width="10" height="4" fill="#4ade80" opacity="0.15" style="animation:glowtail-shimmer 2s ease-in-out infinite"/>
+  <rect x="2" y="1" width="12" height="3" fill="#818cf8" opacity="0.1" style="animation:glowtail-shimmer 2.5s ease-in-out infinite 0.5s"/>
+  <rect x="4" y="0" width="1" height="5" fill="#92400e"/>
+  <rect x="3" y="1" width="2" height="1" fill="#92400e"/>
+  <rect x="2" y="0" width="2" height="1" fill="#92400e"/>
+  <rect x="4" y="0" width="1" height="3" fill="#4ade80" opacity="0.5" style="animation:glowtail-shimmer 1.8s ease-in-out infinite"/>
+  <rect x="2" y="0" width="2" height="1" fill="#818cf8" opacity="0.4" style="animation:glowtail-shimmer 2.2s ease-in-out infinite 0.3s"/>
+  <rect x="11" y="0" width="1" height="5" fill="#92400e"/>
+  <rect x="11" y="1" width="2" height="1" fill="#92400e"/>
+  <rect x="12" y="0" width="2" height="1" fill="#92400e"/>
+  <rect x="11" y="0" width="1" height="3" fill="#f472b6" opacity="0.5" style="animation:glowtail-shimmer 2s ease-in-out infinite 0.4s"/>
+  <rect x="12" y="0" width="2" height="1" fill="#4ade80" opacity="0.4" style="animation:glowtail-shimmer 1.6s ease-in-out infinite 0.2s"/>
+  <rect x="4" y="8" width="8" height="5" fill="#d4a96a"/>
+  <rect x="3" y="9" width="1" height="4" fill="#d4a96a"/>
+  <rect x="12" y="9" width="1" height="4" fill="#d4a96a"/>
+  <rect x="5" y="10" width="6" height="3" fill="#e8c99a"/>
+  <rect x="5" y="9" width="2" height="1" fill="#f5deb3" opacity="0.7"/>
+  <rect x="9" y="10" width="2" height="1" fill="#f5deb3" opacity="0.6"/>
+  <rect x="6" y="12" width="1" height="1" fill="#f5deb3" opacity="0.5"/>
+  <rect x="7" y="5" width="3" height="4" fill="#d4a96a"/>
+  <rect x="5" y="3" width="6" height="5" fill="#d4a96a"/>
+  <rect x="4" y="4" width="1" height="3" fill="#d4a96a"/>
+  <rect x="11" y="4" width="1" height="3" fill="#d4a96a"/>
+  <rect x="6" y="7" width="4" height="2" fill="#c4956a"/>
+  <rect x="7" y="8" width="2" height="1" fill="#1c1917"/>
+  <rect x="5" y="5" width="2" height="2" fill="#1c1917"/>
+  <rect x="5" y="5" width="1" height="1" fill="#fef9c3" opacity="0.6"/>
+  <rect x="9" y="5" width="2" height="2" fill="#1c1917"/>
+  <rect x="9" y="5" width="1" height="1" fill="#fef9c3" opacity="0.6"/>
+  <rect x="4" y="9" width="2" height="1" fill="#4ade80" opacity="0.2" style="animation:glowtail-shimmer 3s ease-in-out infinite"/>
+  <rect x="10" y="11" width="2" height="1" fill="#818cf8" opacity="0.2" style="animation:glowtail-shimmer 2.5s ease-in-out infinite 1s"/>
+  <rect x="4" y="13" width="2" height="2" fill="#b8864e"/>
+  <rect x="7" y="13" width="2" height="2" fill="#b8864e"/>
+  <rect x="10" y="13" width="2" height="2" fill="#b8864e"/>
+  <rect x="12" y="9" width="2" height="2" fill="#f5deb3"/>
+</svg>
