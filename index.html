@@ -243,13 +243,24 @@
 
 <!-- GAME -->
 <div id="gameScreen" class="screen">
-  <div class="topbar">
-    <div>
-      <div class="topbar-name" id="topbarName">TAMER</div>
-      <div style="font-size:14px;color:var(--text2);" id="topbarLevel">Lv.1 Tamer</div>
+  <div class="topbar" style="flex-direction:column;gap:4px;padding:8px 16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <div>
+        <div class="topbar-name" id="topbarName">TAMER</div>
+        <div style="font-size:14px;color:var(--text2);" id="topbarLevel">Lv.1 Tamer</div>
+      </div>
+      <div class="topbar-stats">
+        <div class="shard-count" id="shardCount">💎 0</div>
+      </div>
     </div>
-    <div class="topbar-stats">
-      <div class="shard-count" id="shardCount">💎 0</div>
+    <div style="width:100%;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:2px;">
+        <span id="xpText">0 XP</span>
+        <span id="xpNext">Next: 100 XP</span>
+      </div>
+      <div style="height:4px;background:var(--bg3);border:1px solid var(--border);overflow:hidden;">
+        <div id="xpBar" style="height:100%;background:var(--accent2);width:0%;transition:width 0.5s;"></div>
+      </div>
     </div>
   </div>
 
@@ -283,12 +294,15 @@
       <div class="trap-status" id="trapStatus">NO TRAP SET</div>
       <div class="trap-timer" id="trapTimer"></div>
       <div id="trapContent">
+        <div id="trapTierDisplay" style="background:var(--bg3);border:1px solid var(--border);padding:10px;margin-bottom:10px;text-align:center;font-size:17px;"></div>
         <p class="helper-text">Set a trap and come back in 1 minute!<br>Higher Tamer Lv improves taming odds!</p>
         <button class="btn btn-green" onclick="setTrap()">🪤 SET TRAP</button>
       </div>
       <button id="claimBtn" class="btn btn-gold" style="display:none;" onclick="claimTrap()">🎉 CLAIM!</button>
     </div>
-    <div class="section-title">📖 RARITY RATES</div>
+    <div class="section-title" style="margin-top:16px;">🔧 TRAP UPGRADES</div>
+    <div id="trapUpgradeList"></div>
+    <div class="section-title" style="margin-top:16px;">📖 RARITY RATES</div>
     <div class="card">
       <div style="font-size:17px;line-height:2;">
         <span class="rarity-common">■ Common</span> — 50%<br>
@@ -512,6 +526,7 @@ const ITEMS_DATA = {
     { id:'tonic', name:'Tonic', icon:'🧪', rarity:'uncommon', type:'healing', healAmount:35, healAll:false, price:60, desc:'Restores 35 HP to one Feral' },
     { id:'elixir', name:'Elixir', icon:'⚗️', rarity:'rare', type:'healing', healAmount:999, healAll:false, price:200, desc:'Fully restores HP to one Feral' },
     { id:'hearty_meal', name:'Hearty Meal', icon:'🍖', rarity:'uncommon', type:'healing', healAmount:20, healAll:true, price:100, desc:'Restores 20 HP to ALL your Ferals' },
+    { id:'soul_ember', name:'Soul Ember', icon:'🕯️', rarity:'epic', type:'revival', price:100, desc:'Revives a fallen Feral with 25% HP' },
   ],
   stones: [
     { id:'emberstone', name:'Emberstone', icon:'🔥', rarity:'uncommon', type:'stone', effect:'burn', price:80, desc:'Adds burn chance on hit' },
@@ -536,6 +551,49 @@ const PLAYERS = [
   { id:'player5', name:'Player 5', icon:'🦊', pin:'0000' },
   { id:'player6', name:'Player 6', icon:'🐉', pin:'0000' },
 ];
+
+// ===== OSRS XP TABLE =====
+// XP needed for each level (cumulative, OSRS-style curve)
+function xpForLevel(lvl) {
+  let total = 0;
+  for(let i = 1; i < lvl; i++) {
+    total += Math.floor(i + 300 * Math.pow(2, i/7));
+  }
+  return Math.floor(total / 4);
+}
+
+function getLevelFromXp(xp) {
+  let lvl = 1;
+  while(lvl < 99 && xpForLevel(lvl+1) <= xp) lvl++;
+  return lvl;
+}
+
+function getXpToNextLevel(xp) {
+  const lvl = getLevelFromXp(xp);
+  if(lvl >= 99) return 0;
+  return xpForLevel(lvl+1) - xp;
+}
+
+function getXpProgress(xp) {
+  const lvl = getLevelFromXp(xp);
+  if(lvl >= 99) return 100;
+  const curr = xpForLevel(lvl);
+  const next = xpForLevel(lvl+1);
+  return Math.round(((xp - curr) / (next - curr)) * 100);
+}
+
+// ===== TRAP UPGRADES =====
+const TRAP_TIERS = [
+  { id:'basic', name:'Basic Trap', icon:'🪤', escapeChance:7, cost:0, desc:'7% escape chance' },
+  { id:'reinforced', name:'Reinforced Trap', icon:'🔧', escapeChance:4, cost:200, desc:'4% escape chance' },
+  { id:'masterwork', name:'Masterwork Trap', icon:'⚙️', escapeChance:1, cost:500, desc:'1% escape chance' },
+  { id:'legendary', name:'Legendary Trap', icon:'💎', escapeChance:0, cost:1500, desc:'0% escape chance!' },
+];
+
+function getTrapTier() {
+  const tierIdx = playerData.trapTier || 0;
+  return TRAP_TIERS[tierIdx] || TRAP_TIERS[0];
+}
 
 // ===== STATE =====
 let currentPlayer = null;
@@ -799,10 +857,18 @@ function enterGame() {
 }
 
 function updateTopbar() {
+  const xp = playerData.tamerXp || 0;
+  const lvl = getLevelFromXp(xp);
+  playerData.tamerLevel = lvl;
+  const toNext = getXpToNextLevel(xp);
+  const pct = getXpProgress(xp);
   document.getElementById('topbarName').textContent=currentPlayer.name.toUpperCase();
-  document.getElementById('topbarLevel').textContent=`Lv.${playerData.tamerLevel} Tamer`;
-  document.getElementById('shardCount').textContent=`💎 ${playerData.shards}`;
-  document.getElementById('shopShards').textContent=`💎 ${playerData.shards} Shards`;
+  document.getElementById('topbarLevel').textContent=`Lv.${lvl} Tamer${lvl>=99?' (MAX)':''}`;
+  document.getElementById('shardCount').textContent=`💎 ${Math.floor(playerData.shards)}`;
+  document.getElementById('shopShards').textContent=`💎 ${Math.floor(playerData.shards)} Shards`;
+  document.getElementById('xpText').textContent=`${xp.toLocaleString()} XP`;
+  document.getElementById('xpNext').textContent=lvl>=99?'MAX LEVEL':`Next Lv: ${toNext.toLocaleString()} XP`;
+  document.getElementById('xpBar').style.width=pct+'%';
 }
 
 // ===== TABS =====
@@ -1041,7 +1107,10 @@ window.openFeralDetail = function(feralId) {
       <div class="item-slot" onclick="openEquipSlot('${feralId}','stone')"><div class="item-slot-type">STONE</div><div class="item-slot-icon">${stone?stone.icon:'+'}</div><div class="item-slot-name">${stone?stone.name:'Empty'}</div></div>
     </div></div>
     ${feral.alive===false ?
-      `<button class="btn btn-gray btn-sm" style="margin-top:16px;" onclick="releaseFeral('${feralId}')">🕊️ LAY TO REST (+7 Shards)</button>` :
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
+        <button class="btn btn-gold btn-sm" onclick="openHealMenu('${feralId}')">🕯️ REVIVE</button>
+        <button class="btn btn-gray btn-sm" onclick="releaseFeral('${feralId}')">🕊️ LAY TO REST</button>
+      </div>` :
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
         <button class="btn btn-green btn-sm" onclick="openHealMenu('${feralId}')">💊 USE ITEM</button>
         <button class="btn btn-red btn-sm" onclick="releaseFeral('${feralId}')">🌿 RELEASE</button>
@@ -1073,50 +1142,65 @@ window.equipItem = async function(feralId,slotType,itemId) {
 window.openHealMenu = function(feralId) {
   const feral = (playerData.ferals||[]).find(f=>f.id===feralId);
   if(!feral) return;
+  const fallen = feral.alive===false;
+  const validTypes = fallen ? ['revival'] : ['healing','revival'];
   const healItems = (playerData.inventory||[]).filter(i=>{
-    const item=findItem(i.itemId); return item&&item.type==='healing';
+    const item=findItem(i.itemId); return item&&validTypes.includes(item.type);
   });
   if(healItems.length===0) {
-    openModal(`<div class="modal-title">NO HEALING ITEMS</div><p style="text-align:center;color:var(--text2);margin-top:12px;">Buy healing items from the shop!<br><br>🌿 Wild Herb — 25 Shards<br>🧪 Tonic — 60 Shards<br>⚗️ Elixir — 200 Shards<br>🍖 Hearty Meal — 100 Shards</p>`);
+    openModal(`<div class="modal-title">NO ITEMS</div><p style="text-align:center;color:var(--text2);margin-top:12px;">Buy items from the shop!<br><br>🌿 Wild Herb — 25 Shards<br>🧪 Tonic — 60 Shards<br>⚗️ Elixir — 200 Shards<br>🍖 Hearty Meal — 100 Shards<br>🕯️ Soul Ember — 100 Shards (revive!)</p>`);
     return;
   }
   const curHp = feral.currentHp ?? feral.stats?.hp;
   const maxHp = feral.stats?.hp;
   openModal(`
-    <div class="modal-title">💊 HEAL ${feral.name.toUpperCase()}</div>
-    <p style="text-align:center;color:var(--text2);font-size:16px;margin-bottom:12px;">HP: ${curHp}/${maxHp}</p>
+    <div class="modal-title">${fallen?'🕯️ REVIVE':'💊 HEAL'} ${feral.name.toUpperCase()}</div>
+    <p style="text-align:center;color:var(--text2);font-size:16px;margin-bottom:12px;">${fallen?'FALLEN':'HP: '+curHp+'/'+maxHp}</p>
     <div class="scroll-list">
       ${healItems.map((inv,invIdx)=>{
         const item=findItem(inv.itemId); if(!item) return '';
-        const healAmt = item.healAll ? `+${item.healAmount} ALL` : `+${Math.min(item.healAmount, maxHp-curHp)} HP`;
+        const label = item.type==='revival' ? 'REVIVE 25% HP' : item.healAll ? `+${item.healAmount} ALL` : `+${Math.min(item.healAmount, maxHp-curHp)} HP`;
         return `<div class="shop-item" onclick="useHealItem('${feralId}',${invIdx})">
           <div class="shop-item-icon">${item.icon}</div>
           <div class="shop-item-info">
             <div class="shop-item-name">${item.name}</div>
             <div class="shop-item-desc">${item.desc}</div>
           </div>
-          <div style="color:var(--green);font-size:18px;">${healAmt}</div>
+          <div style="color:var(--green);font-size:18px;">${label}</div>
         </div>`;
       }).join('')}
     </div>`);
 };
 
 window.useHealItem = async function(feralId, invIdx) {
+  const feral = (playerData.ferals||[]).find(f=>f.id===feralId);
+  if(!feral) return;
+  const fallen = feral.alive===false;
+  const validTypes = fallen ? ['revival'] : ['healing','revival'];
   const healInvItems = (playerData.inventory||[]).map((i,idx)=>({...i,_idx:idx})).filter(i=>{
-    const item=findItem(i.itemId); return item&&item.type==='healing';
+    const item=findItem(i.itemId); return item&&validTypes.includes(item.type);
   });
   const invItem = healInvItems[invIdx];
   if(!invItem) return;
   const item = findItem(invItem.itemId);
   if(!item) return;
 
-  // Remove item from inventory
   playerData.inventory.splice(invItem._idx, 1);
 
-  if(item.healAll) {
+  if(item.type==='revival') {
+    const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
+    if(idx!==-1){
+      const maxHp=playerData.ferals[idx].stats?.hp||50;
+      playerData.ferals[idx].alive=true;
+      playerData.ferals[idx].currentHp=Math.max(1,Math.round(maxHp*0.25));
+    }
+    soundTame();
+    showNotif(`🕯️ ${feral.name} has been revived!`,'var(--gold)');
+  } else if(item.healAll) {
     (playerData.ferals||[]).forEach(f=>{
       if(f.alive!==false) f.currentHp=Math.min(f.stats?.hp||50,(f.currentHp??0)+item.healAmount);
     });
+    soundHeal();
     showNotif(`🍖 All Ferals healed +${item.healAmount} HP!`,'var(--green)');
   } else {
     const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
@@ -1124,9 +1208,9 @@ window.useHealItem = async function(feralId, invIdx) {
       const maxHp=playerData.ferals[idx].stats?.hp||50;
       playerData.ferals[idx].currentHp=Math.min(maxHp,(playerData.ferals[idx].currentHp??0)+item.healAmount);
     }
+    soundHeal();
     showNotif(`${item.icon} Used ${item.name}!`,'var(--green)');
   }
-  soundHeal();
   await savePlayerData();
   closeModal();
   renderRoster();
@@ -1155,12 +1239,17 @@ window.releaseFeral = async function(feralId) {
 };
 
 function checkTamerLevelUp() {
-  const newLevel=Math.floor((playerData.tamerXp||0)/100)+1;
-  if(newLevel>(playerData.tamerLevel||1)) { playerData.tamerLevel=newLevel; showNotif(`🎉 Tamer Level Up! Lv.${newLevel}!`,'var(--gold)'); }
+  const xp = playerData.tamerXp || 0;
+  const newLevel = getLevelFromXp(xp);
+  if(newLevel > (playerData.tamerLevel||1)) {
+    playerData.tamerLevel = newLevel;
+    showNotif(`🎉 Tamer Level Up! Lv.${newLevel}!`,'var(--gold)');
+  }
 }
 
 // ===== TRAP =====
 function renderTrap() {
+  renderTrapUpgrades();
   const trap=playerData.trap;
   const icon=document.getElementById('trapIcon');
   const status=document.getElementById('trapStatus');
@@ -1168,12 +1257,59 @@ function renderTrap() {
   const content=document.getElementById('trapContent');
   const claimBtn=document.getElementById('claimBtn');
   if(trapInterval) clearInterval(trapInterval);
-  if(!trap) { icon.textContent='🪤'; status.textContent='NO TRAP SET'; timer.textContent=''; content.style.display='block'; claimBtn.style.display='none'; return; }
+  if(!trap) {
+    const tier=getTrapTier();
+    icon.textContent=tier.icon;
+    status.textContent='NO TRAP SET';
+    timer.textContent='';
+    content.style.display='block';
+    claimBtn.style.display='none';
+    return;
+  }
   const now=Date.now(); const end=trap.endTime; content.style.display='none';
   if(now>=end) { icon.textContent='🎉'; status.textContent='TRAP READY!'; timer.textContent=''; claimBtn.style.display='block'; return; }
   claimBtn.style.display='none'; icon.textContent='⏳'; status.textContent='TRAP IS SET...';
   trapInterval=setInterval(()=>{ const rem=Math.max(0,end-Date.now()); if(rem===0){ clearInterval(trapInterval); icon.textContent='🎉'; status.textContent='TRAP READY!'; timer.textContent=''; claimBtn.style.display='block'; return; } const m=Math.floor(rem/60000); const s=Math.floor((rem%60000)/1000); timer.textContent=`${m}:${s.toString().padStart(2,'0')}`; },1000);
 }
+
+function renderTrapUpgrades() {
+  const tierIdx = playerData.trapTier || 0;
+  const tierDisplay = document.getElementById('trapTierDisplay');
+  if(tierDisplay) {
+    const cur = TRAP_TIERS[tierIdx];
+    tierDisplay.innerHTML = `${cur.icon} <span style="font-family:var(--pixel);font-size:8px;color:var(--accent2);">${cur.name}</span><br><span style="color:var(--text2);">${cur.desc}</span>`;
+  }
+  const list = document.getElementById('trapUpgradeList');
+  if(!list) return;
+  list.innerHTML = TRAP_TIERS.map((t,i) => {
+    const owned = i <= tierIdx;
+    const isNext = i === tierIdx + 1;
+    const canAfford = (playerData.shards||0) >= t.cost;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border:${owned?'2px solid var(--green)':isNext?'2px solid var(--border)':'1px solid var(--border)'};margin-bottom:6px;">
+      <span style="font-size:28px;">${t.icon}</span>
+      <div style="flex:1;">
+        <div style="font-family:var(--pixel);font-size:8px;color:${owned?'var(--green)':'var(--text)'};">${t.name} ${owned?'✓':''}</div>
+        <div style="color:var(--text2);font-size:15px;">${t.desc}</div>
+      </div>
+      ${owned ? '' : `<button class="btn btn-gold btn-sm" style="width:auto;padding:6px 10px;${!canAfford?'opacity:0.5;':''}" onclick="buyTrapUpgrade(${i})" ${!canAfford?'disabled':''}>💎 ${t.cost}</button>`}
+    </div>`;
+  }).join('');
+}
+
+window.buyTrapUpgrade = async function(tierIdx) {
+  const tier = TRAP_TIERS[tierIdx];
+  if(!tier) return;
+  if((playerData.shards||0) < tier.cost) { showNotif('Not enough Shards!','var(--red)'); return; }
+  const curTier = playerData.trapTier || 0;
+  if(tierIdx <= curTier) { showNotif('Already unlocked!','var(--text2)'); return; }
+  if(tierIdx > curTier + 1) { showNotif('Unlock previous tier first!','var(--red)'); return; }
+  playerData.shards -= tier.cost;
+  playerData.trapTier = tierIdx;
+  await savePlayerData();
+  updateTopbar();
+  renderTrap();
+  showNotif(`${tier.icon} ${tier.name} unlocked!`,'var(--gold)');
+};
 
 window.setTrap = async function() {
   playerData.trap={endTime:Date.now()+1*60*1000,minutes:1};
@@ -1183,16 +1319,21 @@ window.setTrap = async function() {
 
 window.claimTrap = async function() {
   const trap=playerData.trap; if(!trap) return;
+  const trapTier = getTrapTier();
+  const escapeChance = trapTier.escapeChance;
   const roll=Math.random()*100;
   let rarity;
-  if(roll<7) {
+  if(roll < escapeChance) {
     playerData.trap=null; await savePlayerData(); renderTrap();
-    openModal(`<div class="modal-title">TRAP FAILED</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">💨</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">Whatever was here got away.<br>Better luck next time!</div></div>`);
+    openModal(`<div class="modal-title">TRAP FAILED</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">💨</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">Whatever was here got away.<br>Upgrade your trap to reduce escapes!</div></div>`);
     return;
-  } else if(roll<57) rarity='common';
-  else if(roll<82) rarity='uncommon';
-  else if(roll<94) rarity='rare';
-  else if(roll<99) rarity='epic';
+  }
+  const remaining = 100 - escapeChance;
+  const adjRoll = roll - escapeChance;
+  if(adjRoll < remaining * 0.526) rarity='common';
+  else if(adjRoll < remaining * 0.789) rarity='uncommon';
+  else if(adjRoll < remaining * 0.921) rarity='rare';
+  else if(adjRoll < remaining * 0.974) rarity='epic';
   else rarity='legendary';
 
   const matching=Object.values(FERALS_DATA).filter(f=>f.rarity===rarity);
@@ -1743,7 +1884,7 @@ function renderShop() {
   const list=document.getElementById('shopList');
   list.innerHTML=`
     <p class="helper-text">Items also drop from battles and traps!</p>
-    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">💊 HEALING</div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">💊 HEALING & REVIVAL</div>
     ${ITEMS_DATA.healing.map(i=>shopItemHTML(i)).join('')}
     <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">💎 TRINKETS</div>
     ${ITEMS_DATA.trinkets.map(i=>shopItemHTML(i)).join('')}
