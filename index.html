@@ -493,6 +493,88 @@ const FERALS_DATA = {
   detonax: { id:'detonax', name:'Detonax', sprite:'🦀', rarity:'legendary', baseStats:{hp:130,atk:38,def:32,spd:18}, ability:{name:'Bomb Claws',desc:'40% chance special attack causes massive explosion at 150% damage'}, basicAttack:'Claw Slam', specialAttack:'Detonation Strike' },
 };
 
+// ===== FERAL FLAVOR TEXT =====
+const FERAL_LORE = {
+  sylvix: "Researchers believe Sylvix doesn't haunt places — it haunts people. Specifically, people who owe it something.",
+  lunnis: "Lunnis only appears fully solid under moonlight. In daylight it looks slightly delayed, like it arrived a moment after itself.",
+  grubbin: "The mushrooms growing from Grubbin's spines are not parasites. Grubbin grew them intentionally. Nobody knows why.",
+  flicket: "Flicket's belly light has been used by lost travelers for centuries. Flicket charges for this service in flies.",
+  dustmaw: "Dustmaw doesn't hide in the sand. The sand hides in Dustmaw.",
+  pebblox: "When rolled into a ball, Pebblox is completely indistinguishable from a river stone. It uses this mostly for naps.",
+  wisprat: "Wisprat's tail flame never goes out, even underwater. Scientists find this deeply upsetting.",
+  cluckle: "Cluckle doesn't mean to zap things. It just gets excited. Everything gets zapped when Cluckle gets excited.",
+  mossfin: "Mossfin walked out of the ocean 400 years ago and never looked back. The ocean has not forgiven it.",
+  snarlpup: "Snarlpup wants to be your friend. The thorns are not intentional. The thorns are very much intentional.",
+  coralwing: "Coralwing nests at the bottom of the ocean and hunts at the top of the sky. Nobody has explained how.",
+  thornback: "Thornback has been alive for 600 years. It has seen empires fall. It is not impressed by you.",
+  cindermane: "Cindermane's mane has been burning since birth. Vets are baffled. Cindermane seems fine with it.",
+  glowtail: "Glowtail's antlers predict the weather. Unfortunately they only predict weather from three years ago.",
+  bogsnap: "Bogsnap's vines grow back within hours of being cut. Bogsnap finds pruning deeply offensive.",
+  vexcrow: "Vexcrow doesn't cause storms. It just arrives right before them, every single time, without explanation.",
+  mirewing: "Mirewing has no reflection of its own. It borrows yours.",
+  embertoad: "Embertoad secretes liquid magma instead of typical toad mucus. Herpetologists have stopped asking questions.",
+  duskfang: "Duskfang casts no shadow. Researchers believe it ate its own.",
+  embrak: "Embrak has never been knocked down in recorded history. Embrak has also never been in a hurry.",
+  stonox: "Stonox moves at the speed of a glacier. Also with the force of one.",
+  starclaw: "Starclaw's feathers rearrange nightly into different star patterns. Astronomers call these constellations wrong. Starclaw disagrees.",
+  voidfin: "Voidfin swims through darkness the way other sharks swim through water. It finds light inconvenient.",
+  pyremanx: "Pyremanx has no tail, which it considers an upgrade. More room for fire.",
+  abysselk: "Abysselk descended into the ocean depths millennia ago. Something down there changed it. It doesn't talk about it.",
+  galehawk: "Galehawk's personal tornado has been clocked at 140mph. Galehawk considers this a light breeze.",
+  nebulodon: "Nebulodon existed before the stars. The stars are catching up.",
+  riftserpent: "Riftserpent exists in seventeen dimensions simultaneously. In most of them it is also winning.",
+  ashenwing: "Ashenwing has died four times. Each time something slightly different came back.",
+  hexcoon: "Hexcoon built its own jetpack from stolen parts. The warranty is void. Hexcoon voided it on purpose.",
+  tempus: "Tempus was here before you arrived. Tempus will be here after you leave. Tempus is currently judging your life choices.",
+  detonax: "Scientists theorize Detonax's claws contain compressed unstable energy from the earth's core. Detonax does not theorize. Detonax acts.",
+};
+
+// ===== FLAVOR TEXT POOLS =====
+const DEATH_MESSAGES = [
+  "The wild reclaims its own...",
+  "Their spirit returns to the Feral Age.",
+  "A brave soul lost to the hunt.",
+  "Some Ferals were never meant to be tamed.",
+  "They fought well. The wilds remember.",
+  "Even legends fall.",
+  "Gone, but their battles echo on.",
+  "The Feral Age is cruel to the bold.",
+];
+
+const TRAP_FAIL_MESSAGES = [
+  "Whatever was here got away. Sneaky little thing.",
+  "The trap was empty. Something was watching though.",
+  "Gone. Like it was never there.",
+  "You can almost hear it laughing.",
+  "The bait was eaten. The trap was not triggered. Impressive.",
+  "Nothing. Just paw prints leading nowhere.",
+];
+
+const LEVEL_UP_MESSAGES = [
+  "Your instincts sharpen.",
+  "The Ferals sense your growing power.",
+  "You are becoming something the wilds respect.",
+  "A new level. A new legend forming.",
+  "The hunt gets easier. The prey gets harder.",
+];
+
+const SHINY_MESSAGES = [
+  "This one is different. Special. Keep it safe.",
+  "A rare variant — the wilds are generous today.",
+  "You may never see another like it.",
+  "Something about this one caught the light just right.",
+];
+
+const CATCH_FLAVOR = {
+  common: ["A wild find!", "Not bad for a day's work.", "They struggle, then settle."],
+  uncommon: ["A worthy catch!", "Harder to find than most.", "The trap held. Barely."],
+  rare: ["Incredible! A rare Feral!", "These don't come along often.", "Your trap was ready for this moment."],
+  epic: ["An epic catch! Legends speak of this!", "Few tamers ever see one of these.", "The Feral Age bows its head."],
+  legendary: ["LEGENDARY! The world trembles!", "Songs will be written about this day.", "You have caught something ancient and impossible."],
+};
+
+function randomFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
 // ===== ITEMS =====
 const ITEMS_DATA = {
   trinkets: [
@@ -1098,6 +1180,7 @@ window.openFeralDetail = function(feralId) {
     </div>
     <div style="margin-top:12px;"><div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">ABILITY</div>
     <span class="ability-tag">⚡ ${feral.ability?.name}: ${feral.ability?.desc}</span></div>
+    ${FERAL_LORE[feral.feralId]?`<div style="margin-top:12px;padding:10px;background:var(--bg3);border:1px solid var(--border);font-size:15px;color:var(--text2);font-style:italic;">${FERAL_LORE[feral.feralId]}</div>`:''}
     <div style="margin-top:12px;"><div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">ATTACKS</div>
     <div style="font-size:17px;">⚔️ ${feral.basicAttack}<br>✨ ${feral.specialAttack}</div></div>
     <div style="margin-top:12px;"><div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">EQUIPPED</div>
@@ -1195,7 +1278,7 @@ window.useHealItem = async function(feralId, invIdx) {
       playerData.ferals[idx].currentHp=Math.max(1,Math.round(maxHp*0.25));
     }
     soundTame();
-    showNotif(`🕯️ ${feral.name} has been revived!`,'var(--gold)');
+    showNotif(`🕯️ ${feral.name} returns from the edge...`,'var(--gold)');
   } else if(item.healAll) {
     (playerData.ferals||[]).forEach(f=>{
       if(f.alive!==false) f.currentHp=Math.min(f.stats?.hp||50,(f.currentHp??0)+item.healAmount);
@@ -1243,7 +1326,8 @@ function checkTamerLevelUp() {
   const newLevel = getLevelFromXp(xp);
   if(newLevel > (playerData.tamerLevel||1)) {
     playerData.tamerLevel = newLevel;
-    showNotif(`🎉 Tamer Level Up! Lv.${newLevel}!`,'var(--gold)');
+    const lvlMsg = randomFrom(LEVEL_UP_MESSAGES);
+    showNotif(`🎉 Lv.${newLevel}! ${lvlMsg}`,'var(--gold)');
   }
 }
 
@@ -1325,7 +1409,8 @@ window.claimTrap = async function() {
   let rarity;
   if(roll < escapeChance) {
     playerData.trap=null; await savePlayerData(); renderTrap();
-    openModal(`<div class="modal-title">TRAP FAILED</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">💨</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">Whatever was here got away.<br>Upgrade your trap to reduce escapes!</div></div>`);
+    const failMsg = randomFrom(TRAP_FAIL_MESSAGES);
+    openModal(`<div class="modal-title">TRAP FAILED</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">💨</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">${failMsg}</div><div style="font-size:15px;color:var(--text2);margin-top:8px;">Upgrade your trap to reduce escapes!</div></div>`);
     return;
   }
   const remaining = 100 - escapeChance;
@@ -1368,12 +1453,15 @@ window.claimTrap = async function() {
 
   const sc=shinyClass(shiny);
   if(shiny==='both') soundShiny(); else if(shiny!=='none') soundShiny(); else soundCatch();
+  const catchFlavor = shiny!=='none' ? randomFrom(SHINY_MESSAGES) : randomFrom(CATCH_FLAVOR[newFeral.rarity]||CATCH_FLAVOR.common);
+  const lore = FERAL_LORE[newFeral.feralId] || '';
   openModal(`
     <div class="modal-title">${shiny==='both'?'🌟 ULTRA SHINY CATCH!!!':shiny!=='none'?'✨ SHINY CATCH!':'FERAL CAUGHT!'}</div>
     <div style="text-align:center;padding:16px 0;">
       <div style="font-size:64px;" class="${sc}">${newFeral.sprite}</div>
       <div style="font-size:24px;color:var(--accent2);margin:12px 0;">${newFeral.name} ${shinyBadgeHTML(shiny)}</div>
       <span class="rarity-badge ${getRarityClass(newFeral.rarity)}">${newFeral.rarity.toUpperCase()}</span>
+      <div style="font-size:16px;color:var(--gold);margin-top:8px;font-style:italic;">"${catchFlavor}"</div>
       <div class="stats-grid" style="margin-top:16px;">
         <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val">${newFeral.stats.hp}</div></div>
         <div class="stat-box"><div class="stat-label">ATK</div><div class="stat-val">${newFeral.stats.atk}</div></div>
@@ -1381,6 +1469,7 @@ window.claimTrap = async function() {
         <div class="stat-box"><div class="stat-label">SPD</div><div class="stat-val">${newFeral.stats.spd}</div></div>
       </div>
       <div style="margin-top:12px;"><span class="ability-tag">⚡ ${newFeral.ability?.name}</span></div>
+      ${lore?`<div style="margin-top:14px;padding:10px;background:var(--bg3);border:1px solid var(--border);font-size:15px;color:var(--text2);font-style:italic;text-align:left;">${lore}</div>`:''}
     </div>`);
 };
 
@@ -1673,7 +1762,10 @@ async function finishBattle() {
     if(idx!==-1){playerData.ferals[idx].alive=false;playerData.ferals[idx].currentHp=0;}
     await savePlayerData(); renderRoster();
     soundDefeat();
-    resultDiv.innerHTML=`<div style="color:var(--red);font-family:var(--pixel);font-size:10px;margin-bottom:12px;">💀 DEFEATED</div><div style="font-size:18px;color:var(--text2);">${player.feral.name} has fallen in battle...<br>They are gone forever.</div>`;
+    const deathMsg = randomFrom(DEATH_MESSAGES);
+    resultDiv.innerHTML=`<div style="color:var(--red);font-family:var(--pixel);font-size:10px;margin-bottom:12px;">💀 DEFEATED</div>
+      <div style="font-size:20px;color:var(--text);">${player.feral.name} has fallen.</div>
+      <div style="font-size:17px;color:var(--text2);margin-top:8px;font-style:italic;">"${deathMsg}"</div>`;
     document.getElementById('playerFighter').classList.add('defeated');
   }
 }
