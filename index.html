@@ -214,7 +214,7 @@
 <!-- LOGIN -->
 <div id="loginScreen" class="screen active">
   <div class="game-logo">
-    <span class="pixel-creature">🐺</span>
+    <div id="loginSprite" style="width:80px;height:80px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;"></div>
     <h1>FERAL AGE</h1>
     <div class="subtitle">Choose your tamer</div>
   </div>
@@ -911,15 +911,48 @@ function generateFeralInstance(feralId, shinyOverride=null) {
 async function loadPlayerData(pid) {
   const ref = doc(db,'players',pid);
   const snap = await getDoc(ref);
-  if(snap.exists()) return snap.data();
-  const newData = { id:pid, shards:50, tamerXp:0, tamerLevel:1, trapperLevel:1, ferals:[], inventory:[], trap:null, pvpChallenges:[], totalCaught:0, totalShards:0, tournamentWins:0 };
-  await setDoc(ref,newData);
-  return newData;
+
+  const defaults = {
+    id:pid, shards:50, tamerXp:0, tamerLevel:1, trapperLevel:1, trapTier:0,
+    ferals:[], inventory:[], trap:null, forage:null, pvpChallenges:[],
+    totalCaught:0, totalShards:0, materials:{},
+    forageLevel:1, forageXp:0, herbloreLevel:1, herbloreXp:0, cauldronUnlocked:false,
+  };
+
+  if(snap.exists()) {
+    const saved = snap.data();
+    // Merge safely — existing data wins, defaults fill any gaps
+    const merged = { ...defaults, ...saved };
+    // Validate critical fields
+    merged.ferals = Array.isArray(saved.ferals) ? saved.ferals : [];
+    merged.inventory = Array.isArray(saved.inventory) ? saved.inventory : [];
+    merged.pvpChallenges = Array.isArray(saved.pvpChallenges) ? saved.pvpChallenges : [];
+    merged.shards = typeof saved.shards === 'number' ? saved.shards : defaults.shards;
+    merged.tamerXp = typeof saved.tamerXp === 'number' ? saved.tamerXp : 0;
+    merged.trapTier = typeof saved.trapTier === 'number' ? saved.trapTier : 0;
+    merged.materials = (saved.materials && typeof saved.materials === 'object') ? saved.materials : {};
+    console.log('Loaded '+pid+': '+merged.ferals.length+' ferals, '+merged.shards+' shards, trap tier '+merged.trapTier);
+    return merged;
+  }
+
+  // Brand new player
+  console.log('New player: '+pid);
+  await setDoc(ref, defaults);
+  return defaults;
 }
 
 async function savePlayerData() {
   if(!currentPlayer||!playerData) return;
-  await setDoc(doc(db,'players',currentPlayer.id),playerData);
+  try {
+    if(!Array.isArray(playerData.ferals)) playerData.ferals=[];
+    if(!Array.isArray(playerData.inventory)) playerData.inventory=[];
+    if(!Array.isArray(playerData.pvpChallenges)) playerData.pvpChallenges=[];
+    if(typeof playerData.shards!=='number') playerData.shards=0;
+    await setDoc(doc(db,'players',currentPlayer.id),playerData);
+  } catch(e) {
+    console.error('Save failed:',e);
+    showNotif('⚠️ Save failed — check connection','var(--red)');
+  }
 }
 
 async function saveLeaderboard() {
@@ -942,23 +975,61 @@ async function getAllPlayersData() {
 
 // ===== LOGIN =====
 function renderLogin() {
-  document.getElementById('playerSelect').innerHTML = `<div class="avatar-grid">${PLAYERS.map((p,i)=>`
-    <button class="avatar-btn" onclick="selectPlayer(${i})">
-      <span class="av-icon">${p.icon}</span>
-      <div class="av-name">${p.name}</div>
-      <div class="av-sub">TAP TO PLAY</div>
-    </button>`).join('')}</div>`;
+  // Rotating feral sprite on login screen
+  const rotatingFerals = ['sylvix','lunnis','duskfang','tempus','detonax','tyranus','hexcoon','ashenwing','voidfin','embrak'];
+  let rotIdx = Math.floor(Math.random() * rotatingFerals.length);
+  const spriteEl = document.getElementById('loginSprite');
+  const showSprite = () => {
+    const fid = rotatingFerals[rotIdx % rotatingFerals.length];
+    const fallbacks = {sylvix:'🦊',lunnis:'🐇',duskfang:'🐺',tempus:'🐱',detonax:'🦀',tyranus:'🦖',hexcoon:'🦝',ashenwing:'🐉',voidfin:'🦈',embrak:'🐻'};
+    if(!spriteEl) return;
+    const img = document.createElement('img');
+    img.src = 'sprites/'+fid+'.svg';
+    img.style.cssText = 'width:72px;height:72px;image-rendering:pixelated;animation:float 3s ease-in-out infinite;';
+    img.onerror = function() {
+      const span = document.createElement('span');
+      span.style.cssText = 'font-size:60px;animation:float 3s ease-in-out infinite;display:block;';
+      span.textContent = fallbacks[fid] || '🐾';
+      spriteEl.innerHTML = '';
+      spriteEl.appendChild(span);
+    };
+    spriteEl.innerHTML = '';
+    spriteEl.appendChild(img);
+    rotIdx++;
+  };
+  showSprite();
+  if(window._loginSpriteInterval) clearInterval(window._loginSpriteInterval);
+  window._loginSpriteInterval = setInterval(showSprite, 2500);
+
+  // Build player grid with direct onclick
+  const btns = PLAYERS.map((p,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'avatar-btn';
+    btn.innerHTML = '<span class="av-icon">'+p.icon+'</span><div class="av-name">'+p.name+'</div><div class="av-sub">TAP TO PLAY</div>';
+    btn.addEventListener('click', () => selectPlayer(i));
+    return btn;
+  });
+  const grid = document.createElement('div');
+  grid.className = 'avatar-grid';
+  btns.forEach(b => grid.appendChild(b));
+  const ps = document.getElementById('playerSelect');
+  ps.innerHTML = '';
+  ps.appendChild(grid);
 }
 
-window.selectPlayer = function(idx) {
+function selectPlayer(idx) {
+  if(window._loginSpriteInterval) { clearInterval(window._loginSpriteInterval); window._loginSpriteInterval = null; }
   selectedPlayerIdx=idx; pinInput=''; updatePinDots();
-  document.getElementById('pinTitle').textContent=`${PLAYERS[idx].name.toUpperCase()} — ENTER PIN`;
+  document.getElementById('pinTitle').textContent=PLAYERS[idx].name.toUpperCase()+' — ENTER PIN';
   document.getElementById('pinError').textContent='';
   showScreen('pinScreen');
-};
+}
+window.selectPlayer = selectPlayer;
 
-window.pinKey = function(k) { if(pinInput.length>=4) return; pinInput+=k; updatePinDots(); if(pinInput.length===4) checkPin(); };
-window.pinDel = function() { pinInput=pinInput.slice(0,-1); updatePinDots(); };
+function pinKey(k) { if(pinInput.length>=4) return; pinInput+=k; updatePinDots(); if(pinInput.length===4) checkPin(); }
+function pinDel() { pinInput=pinInput.slice(0,-1); updatePinDots(); }
+window.pinKey = pinKey;
+window.pinDel = pinDel;
 
 function updatePinDots() {
   for(let i=0;i<4;i++) document.getElementById('dot'+i).classList.toggle('filled',i<pinInput.length);
@@ -1534,7 +1605,14 @@ function feralSpriteHTML(feralId, shiny, size) {
   const sc = shinyClass(shiny);
   const fallbacks = {sylvix:'🦊',lunnis:'🐇',grubbin:'🦔',flicket:'🐸',dustmaw:'🦎',pebblox:'🐌',wisprat:'🐀',cluckle:'🐔',mossfin:'🐟',snarlpup:'🐕',coralwing:'🦅',thornback:'🐢',cindermane:'🐎',glowtail:'🦌',bogsnap:'🐊',vexcrow:'🐦',mirewing:'🦇',embertoad:'🐸',duskfang:'🐺',embrak:'🐻',stonox:'🐂',starclaw:'🦅',voidfin:'🦈',pyremanx:'🐈',abysselk:'🦌',galehawk:'🦅',nebulodon:'🦣',riftserpent:'🐍',ashenwing:'🐉',hexcoon:'🦝',tempus:'🐱',detonax:'🦀',tyranus:'🦖'};
   const fb = fallbacks[feralId] || '❓';
-  return '<img src="sprites/'+feralId+'.svg" style="width:'+size+';height:'+size+';image-rendering:pixelated;" class="'+sc+'" onerror="this.outerHTML='<span style=\'font-size:'+size+'\'>'+fb+'</span>'">';
+  const wrap = document.createElement('span');
+  const img = document.createElement('img');
+  img.src = 'sprites/'+feralId+'.svg';
+  img.style.cssText = 'width:'+size+';height:'+size+';image-rendering:pixelated;';
+  if(sc) img.className = sc;
+  img.onerror = function(){ this.outerHTML = '<span style="font-size:'+size+'">'+fb+'</span>'; };
+  wrap.appendChild(img);
+  return wrap.outerHTML;
 }
 
 function renderBattleSelect() {
@@ -1545,7 +1623,7 @@ function renderBattleSelect() {
   document.getElementById('battleStep2').style.display='none';
   const list=document.getElementById('battleSelectList');
   if(alive.length===0) { list.innerHTML='<div class="empty-state"><span class="empty-icon">😔</span>No Ferals available!</div>'; return; }
-  list.innerHTML=alive.map(f=>'<div class="select-feral-item" onclick="searchForBattle(''+f.id+'')">'+
+  list.innerHTML=alive.map(f=>'<div class="select-feral-item" onclick="searchForBattle(\''+f.id+'\')">'+
     feralSpriteHTML(f.feralId||f.id, f.shiny||'none', '36px')+
     '<div class="sfi-info"><div class="sfi-name">'+f.name+'</div><div class="sfi-stats">HP: '+(f.currentHp??f.stats?.hp)+'/'+f.stats?.hp+' | ATK:'+f.stats?.atk+' SPD:'+f.stats?.spd+'</div></div>'+
     '<span class="rarity-badge '+getRarityClass(f.rarity)+'">'+f.rarity.toUpperCase()+'</span></div>').join('');
@@ -2229,26 +2307,31 @@ async function renderMarket() {
     '<button class="btn btn-green btn-sm" onclick="openListItem()">+ LIST ITEM</button>'+
     '<button class="btn btn-blue btn-sm" onclick="openListFeral()">+ LIST FERAL</button></div>'+
     '<div class="market-filter-bar">'+
-    '<button class="filter-btn active" onclick="filterMarket('all',this)">ALL</button>'+
-    '<button class="filter-btn" onclick="filterMarket('feral',this)">FERALS</button>'+
-    '<button class="filter-btn" onclick="filterMarket('trinket',this)">TRINKETS</button>'+
-    '<button class="filter-btn" onclick="filterMarket('essence',this)">ESSENCES</button>'+
-    '<button class="filter-btn" onclick="filterMarket('stone',this)">STONES</button>'+
-    '<button class="filter-btn" onclick="filterMarket('healing',this)">HEALING</button></div>'+
+    '<button class="filter-btn active" onclick="filterMarket(&apos;all&apos;,this)">ALL</button>'+
+    '<button class="filter-btn" onclick="filterMarket(&apos;feral&apos;,this)">FERALS</button>'+
+    '<button class="filter-btn" onclick="filterMarket(&apos;trinket&apos;,this)">TRINKETS</button>'+
+    '<button class="filter-btn" onclick="filterMarket(&apos;essence&apos;,this)">ESSENCES</button>'+
+    '<button class="filter-btn" onclick="filterMarket(&apos;stone&apos;,this)">STONES</button>'+
+    '<button class="filter-btn" onclick="filterMarket(&apos;healing&apos;,this)">HEALING</button></div>'+
     (mine.length>0?'<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">YOUR LISTINGS</div>'+mine.map(l=>mktHTML(l,true)).join('')+
     '<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">MARKET</div>':'')+
     (others.length===0?'<div class="empty-state"><span class="empty-icon">🏪</span>No listings yet!</div>':others.map(l=>mktHTML(l,false)).join(''));
 }
 
 function mktHTML(l,mine) {
-  const icon=l.type==='feral'?feralSpriteHTML(l.itemId,'none','32px'):'<span style="font-size:28px;">'+(l.icon||'📦')+'</span>';
-  const tax=Math.ceil(l.price*0.1);
-  return '<div class="market-listing" data-type="'+l.type+'" onclick="'+(mine?'cancelListing(''+l.id+'')':'buyListing(''+l.id+'')')+'">'+
-    icon+'<div class="market-listing-info">'+
+  const icon = l.type==='feral' ? feralSpriteHTML(l.itemId,'none','32px') : '<span style="font-size:28px;">'+(l.icon||'📦')+'</span>';
+  const tax = Math.ceil(l.price*0.1);
+  const div = document.createElement('div');
+  div.className = 'market-listing';
+  div.dataset.type = l.type;
+  div.addEventListener('click', mine ? ()=>cancelListing(l.id) : ()=>buyListing(l.id));
+  div.innerHTML = icon +
+    '<div class="market-listing-info">'+
     '<div class="market-listing-name">'+l.name+'</div>'+
-    '<div class="market-listing-sub">'+l.sellerName+' • '+l.rarity+' '+(mine?'— tap to cancel':'')+'</div>'+
+    '<div class="market-listing-sub">'+l.sellerName+' • '+l.rarity+(mine?' — tap to cancel':'')+' </div>'+
     (!mine?'<div style="color:var(--text2);font-size:13px;">Tax: '+tax+' 💎 → Seller gets '+(l.price-tax)+' 💎</div>':'')+
-    '</div><div class="market-listing-price">💎 '+l.price+'</div></div>';
+    '</div><div class="market-listing-price">💎 '+l.price+'</div>';
+  return div.outerHTML;
 }
 
 window.filterMarket=function(type,btn){
@@ -2262,32 +2345,66 @@ window.openListItem=function(){
   if(inv.length===0){showNotif('No items to list!','var(--red)');return;}
   const unique={};
   inv.forEach(i=>{const item=findItem(i.itemId);if(item&&!unique[item.id])unique[item.id]=item;});
-  openModal('<div class="modal-title">LIST AN ITEM</div><div class="scroll-list">'+
-    Object.values(unique).map(item=>'<div class="shop-item" onclick="openPriceModal('item',''+item.id+'',''+item.name+'',''+item.icon+'',''+item.rarity+'',''+item.type+'')">'+
-      '<div class="shop-item-icon">'+item.icon+'</div>'+
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="modal-title">LIST AN ITEM</div>';
+  const scroll=document.createElement('div');
+  scroll.className='scroll-list';
+  Object.values(unique).forEach(item=>{
+    const d=document.createElement('div');
+    d.className='shop-item';
+    d.style.cursor='pointer';
+    d.innerHTML='<div class="shop-item-icon">'+item.icon+'</div>'+
       '<div class="shop-item-info"><div class="shop-item-name">'+item.name+'</div><div class="shop-item-desc">'+item.desc+'</div></div>'+
-      '<span class="rarity-badge '+getRarityClass(item.rarity)+'">'+item.rarity.toUpperCase()+'</span></div>').join('')+'</div>');
+      '<span class="rarity-badge '+getRarityClass(item.rarity)+'">'+item.rarity.toUpperCase()+'</span>';
+    d.onclick=()=>openPriceModal('item',item.id,item.name,item.icon,item.rarity,item.type);
+    scroll.appendChild(d);
+  });
+  wrap.appendChild(scroll);
+  document.getElementById('modalBody').innerHTML='';
+  document.getElementById('modalBody').appendChild(wrap);
+  document.getElementById('modalOverlay').style.display='flex';
 };
 
 window.openListFeral=function(){
   const alive=(playerData.ferals||[]).filter(f=>f.alive!==false);
   if(alive.length===0){showNotif('No Ferals to list!','var(--red)');return;}
-  openModal('<div class="modal-title">LIST A FERAL</div>'+
-    '<p style="color:var(--red);font-size:15px;text-align:center;margin-bottom:12px;">⚠️ No take backs! They leave immediately.</p><div class="scroll-list">'+
-    alive.map(f=>'<div class="select-feral-item" onclick="openPriceModal('feral',''+f.id+'',''+f.name+'',''+( f.feralId||f.id)+'',''+f.rarity+'','feral')">'+
-      feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')+
-      '<div class="sfi-info"><div class="sfi-name">'+f.name+'</div><div class="sfi-stats">ATK:'+f.stats?.atk+' DEF:'+f.stats?.def+'</div></div></div>').join('')+'</div>');
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="modal-title">LIST A FERAL</div>'+
+    '<p style="color:var(--red);font-size:15px;text-align:center;margin-bottom:12px;">⚠️ No take backs! They leave immediately.</p>';
+  const scroll=document.createElement('div');
+  scroll.className='scroll-list';
+  alive.forEach(f=>{
+    const d=document.createElement('div');
+    d.className='select-feral-item';
+    d.style.cursor='pointer';
+    d.innerHTML=feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')+
+      '<div class="sfi-info"><div class="sfi-name">'+f.name+'</div><div class="sfi-stats">ATK:'+f.stats?.atk+' DEF:'+f.stats?.def+'</div></div>';
+    d.onclick=()=>openPriceModal('feral',f.id,f.name,f.feralId||f.id,f.rarity,'feral');
+    scroll.appendChild(d);
+  });
+  wrap.appendChild(scroll);
+  document.getElementById('modalBody').innerHTML='';
+  document.getElementById('modalBody').appendChild(wrap);
+  document.getElementById('modalOverlay').style.display='flex';
 };
 
 window.openPriceModal=function(listType,itemId,name,iconOrId,rarity,subtype){
-  openModal('<div class="modal-title">SET PRICE</div>'+
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="modal-title">SET PRICE</div>'+
     '<div style="text-align:center;margin-bottom:16px;">'+
     (listType==='feral'?feralSpriteHTML(iconOrId,'none','48px'):'<span style="font-size:48px;">'+iconOrId+'</span>')+
     '<div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);margin-top:8px;">'+name+'</div></div>'+
     '<div style="margin-bottom:12px;"><div style="font-size:16px;color:var(--text2);margin-bottom:6px;">Price (1-9,999 Shards):</div>'+
     '<input id="listingPrice" type="number" min="1" max="9999" value="100" style="width:100%;background:var(--bg3);border:2px solid var(--border);color:var(--text);font-family:var(--pixel);font-size:14px;padding:10px;"></div>'+
-    '<div style="color:var(--text2);font-size:15px;margin-bottom:12px;">10% tax. You receive 90%.</div>'+
-    '<button class="btn btn-gold" onclick="confirmListing(''+listType+'',''+itemId+'',''+name+'',''+iconOrId+'',''+rarity+'',''+subtype+'')">LIST NOW</button>');
+    '<div style="color:var(--text2);font-size:15px;margin-bottom:12px;">10% tax. You receive 90%.</div>';
+  const btn=document.createElement('button');
+  btn.className='btn btn-gold';
+  btn.textContent='LIST NOW';
+  btn.onclick=()=>confirmListing(listType,itemId,name,iconOrId,rarity,subtype);
+  wrap.appendChild(btn);
+  document.getElementById('modalBody').innerHTML='';
+  document.getElementById('modalBody').appendChild(wrap);
+  document.getElementById('modalOverlay').style.display='flex';
 };
 
 window.confirmListing=async function(listType,itemId,name,iconOrId,rarity,subtype){
@@ -2319,7 +2436,8 @@ window.buyListing=async function(listingId){
     '<div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);margin:8px 0;">'+l.name+'</div>'+
     '<div style="color:var(--text2);">Cost: 💎 '+l.price+'</div>'+
     '<div style="color:var(--text2);font-size:15px;">Tax: 💎 '+tax+' (seller gets '+(l.price-tax)+')</div></div>'+
-    '<button class="btn btn-gold" onclick="confirmBuy(''+listingId+'')">BUY NOW</button>');
+    '<button class="btn btn-gold" id="confirmBuyBtn">BUY NOW</button>');
+  setTimeout(()=>{const b=document.getElementById('confirmBuyBtn');if(b)b.onclick=()=>confirmBuy(listingId);},50);
 };
 
 window.confirmBuy=async function(listingId){
@@ -2341,7 +2459,8 @@ window.confirmBuy=async function(listingId){
 };
 
 window.cancelListing=async function(listingId){
-  openModal('<div class="modal-title">CANCEL LISTING?</div><p style="text-align:center;color:var(--text2);font-size:17px;margin-bottom:16px;">Return this item to your inventory?</p><button class="btn btn-red" onclick="confirmCancel(''+listingId+'')">YES CANCEL</button>');
+  openModal('<div class="modal-title">CANCEL LISTING?</div><p style="text-align:center;color:var(--text2);font-size:17px;margin-bottom:16px;">Return this item to your inventory?</p><button class="btn btn-red" id="confirmCancelBtn">YES CANCEL</button>');
+  setTimeout(()=>{const b=document.getElementById('confirmCancelBtn');if(b)b.onclick=()=>confirmCancel(listingId);},50);
 };
 
 window.confirmCancel=async function(listingId){
@@ -2391,7 +2510,7 @@ function renderForage(){
     HERBLORE_RECIPES.filter(r=>r.minLevel<=hl).map(r=>'<div class="recipe-card"><div class="recipe-name">'+r.icon+' '+r.name+'</div>'+
       '<div class="recipe-ingredients">Needs: '+r.ingredients.map(id=>{const m=FORAGE_MATERIALS.find(x=>x.id===id);return m?m.icon+' '+m.name:id;}).join(', ')+'</div>'+
       '<div style="color:var(--text2);font-size:14px;margin-top:4px;">'+r.desc+'</div>'+
-      '<button class="btn btn-green btn-sm" style="margin-top:8px;" onclick="brewRecipe(''+r.id+'')">BREW</button></div>').join('')+
+      '<button class="btn btn-green btn-sm brew-btn" style="margin-top:8px;" data-recipeid="'+r.id+'">BREW</button></div>').join('')+
     (HERBLORE_RECIPES.filter(r=>r.minLevel>hl).length>0?'<div style="color:var(--text2);font-size:15px;">🔒 '+HERBLORE_RECIPES.filter(r=>r.minLevel>hl).length+' recipes locked</div>':'')+
     '</div>')+
     '<div class="section-title">📖 DROPS AT Lv.'+fl+'</div>'+
