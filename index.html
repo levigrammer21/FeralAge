@@ -103,7 +103,7 @@
   .btn-tame { background: #064e3b; border-color: #10b981; color: #10b981; font-size: 9px; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-sm { font-size: 7px; padding: 8px 6px; }
-  .battle-arena { background: linear-gradient(180deg, #0d0d1a 0%, #1a0a2e 50%, #0d1a0d 100%); border: 2px solid var(--border); padding: 20px 16px; margin-bottom: 12px; min-height: 220px; position: relative; overflow: hidden; }
+  .battle-arena { background: linear-gradient(180deg, #0d0d1a 0%, #1a0a2e 50%, #0d1a0d 100%); border: 2px solid var(--border); padding: 12px 16px; margin-bottom: 8px; position: relative; overflow: hidden; flex-shrink: 0; }
   .battle-fighters { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .fighter { text-align: center; width: 45%; transition: transform 0.15s; }
   .fighter.attacking { animation: attack-left 0.3s ease; }
@@ -125,7 +125,7 @@
   .sp-bar { height: 4px; background: var(--bg3); border: 1px solid var(--border); overflow: hidden; }
   .sp-fill { height: 100%; background: var(--accent2); transition: width 0.3s; }
   .vs-text { font-family: var(--pixel); font-size: 14px; color: var(--border); }
-  .battle-log { background: var(--bg); border: 1px solid var(--border); padding: 10px; font-size: 18px; color: var(--text2); min-height: 60px; max-height: 80px; overflow-y: auto; }
+  .battle-log { background: var(--bg); border: 1px solid var(--border); padding: 10px; font-size: 18px; color: var(--text2); min-height: 80px; max-height: 200px; overflow-y: auto; }
   .battle-log .log-entry { margin-bottom: 4px; }
   .log-hit { color: var(--red); }
   .log-special { color: var(--accent2); }
@@ -186,6 +186,27 @@
   .shiny-badge-glow { color: var(--gold); border-color: var(--gold); }
   .shiny-badge-invert { color: var(--accent2); border-color: var(--accent2); }
   .shiny-badge-both { color: white; border-color: white; background: linear-gradient(90deg, gold, #c084fc); }
+
+  /* Roster grid */
+  .feral-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .feral-grid-card { background: var(--panel); border: 2px solid var(--border); padding: 8px 4px; text-align: center; cursor: pointer; position: relative; transition: border-color 0.15s; user-select: none; }
+  .feral-grid-card:active { border-color: var(--accent2); transform: scale(0.97); }
+  .feral-grid-card.dragging { opacity: 0.4; border-color: var(--accent2); }
+  .feral-grid-card.drag-over { border-color: var(--gold); background: var(--bg3); }
+  .feral-grid-card.fallen-card { opacity: 0.5; }
+  .fgc-sprite { font-size: 32px; display: block; margin-bottom: 4px; }
+  .fgc-name { font-family: var(--pixel); font-size: 6px; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fgc-hp { height: 4px; background: var(--bg3); border: 1px solid var(--border); margin: 3px 2px; overflow: hidden; }
+  .fgc-hp-fill { height: 100%; background: var(--green); }
+  .fgc-rarity { font-family: var(--pixel); font-size: 5px; padding: 1px 3px; border: 1px solid; display: inline-block; margin-top: 2px; }
+  .fgc-fallen-badge { position: absolute; top: 2px; right: 2px; font-size: 10px; }
+  .fgc-shiny-badge { position: absolute; top: 2px; left: 2px; font-size: 10px; }
+
+  /* Filter & sort buttons */
+  .filter-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: var(--pixel); font-size: 7px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent2); color: white; }
+  .sort-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-family: var(--pixel); font-size: 6px; padding: 5px 7px; cursor: pointer; white-space: nowrap; }
+  .sort-btn.active { background: var(--bg3); border-color: var(--gold); color: var(--gold); }
 </style>
 </head>
 <body>
@@ -285,18 +306,36 @@
   <!-- ROSTER -->
   <div id="tab-roster" class="tab-content">
     <div class="section-title">🐾 YOUR FERALS <span id="rosterCount" style="color:var(--text2);"></span></div>
+    <!-- Filter bar -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:4px;">
+      <button class="filter-btn active" onclick="setRosterFilter('all')" id="filter-all">ALL</button>
+      <button class="filter-btn" onclick="setRosterFilter('alive')" id="filter-alive">ALIVE</button>
+      <button class="filter-btn" onclick="setRosterFilter('fallen')" id="filter-fallen">FALLEN</button>
+    </div>
+    <!-- Sort bar -->
+    <div style="display:flex;gap:4px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;align-items:center;">
+      <span style="font-family:var(--pixel);font-size:7px;color:var(--text2);white-space:nowrap;">SORT:</span>
+      <button class="sort-btn active" onclick="setRosterSort('rarity')" id="sort-rarity">RARITY</button>
+      <button class="sort-btn" onclick="setRosterSort('hp')" id="sort-hp">HP</button>
+      <button class="sort-btn" onclick="setRosterSort('atk')" id="sort-atk">ATK</button>
+      <button class="sort-btn" onclick="setRosterSort('def')" id="sort-def">DEF</button>
+      <button class="sort-btn" onclick="setRosterSort('spd')" id="sort-spd">SPD</button>
+      <button class="sort-btn" onclick="setRosterSort('wins')" id="sort-wins">WINS</button>
+      <button class="sort-btn" onclick="setRosterSort('name')" id="sort-name">A-Z</button>
+    </div>
     <div id="rosterList"></div>
   </div>
 
   <!-- BATTLE -->
-  <div id="tab-battle" class="tab-content">
-    <div class="section-title">⚔️ BATTLE</div>
+  <div id="tab-battle" class="tab-content" style="padding:8px;">
     <div id="battleContent">
+      <div class="section-title">⚔️ BATTLE</div>
       <p class="helper-text">Select a Feral to send into battle!<br>Win → try to tame the wild Feral!</p>
       <div id="battleSelectList" class="select-feral-list"></div>
     </div>
-    <div id="battleArena" style="display:none;">
-      <div class="battle-arena">
+    <div id="battleArena" style="display:none;height:calc(100vh - 130px);display:none;flex-direction:column;">
+      <!-- Fighters row -->
+      <div class="battle-arena" style="flex-shrink:0;">
         <div class="battle-fighters">
           <div class="fighter" id="playerFighter">
             <span class="fighter-sprite" id="playerSprite">🐺</span>
@@ -324,13 +363,15 @@
             </div>
           </div>
         </div>
-        <div class="battle-log" id="battleLog"></div>
       </div>
-      <div id="battleControls" style="display:flex;gap:8px;margin-top:8px;">
+      <!-- Battle log - grows to fill space -->
+      <div class="battle-log" id="battleLog" style="flex:1;max-height:none;margin-bottom:8px;"></div>
+      <!-- Controls always at bottom -->
+      <div id="battleControls" style="display:flex;gap:8px;flex-shrink:0;">
         <button class="btn btn-gray btn-sm" onclick="fleeBattle()" style="flex:1;">🏃 FLEE</button>
         <button class="btn btn-blue btn-sm" onclick="openSwapMenu()" style="flex:1;">🔄 SWAP</button>
       </div>
-      <div id="battleResultArea" style="display:none;">
+      <div id="battleResultArea" style="display:none;flex-shrink:0;">
         <div class="card" id="battleResult" style="text-align:center;"></div>
         <div id="tameSection" style="display:none;" class="tame-section">
           <div class="tame-chance" id="tameChanceText">TAME CHANCE: 65%</div>
@@ -586,22 +627,28 @@ function soundCatch() {
 }
 
 // ===== REST HEALING =====
+// Full regen = 60 minutes regardless of max HP
+// Tick every 10 seconds = 6 ticks/min
+// HP per tick = maxHp / (60 * 6) = maxHp / 360
 function startRestHealing() {
   if (restInterval) clearInterval(restInterval);
   restInterval = setInterval(async () => {
     if (!playerData || battleState) return;
     let healed = false;
     (playerData.ferals || []).forEach(f => {
-      if (f.alive !== false && f.currentHp && f.stats?.hp && f.currentHp < f.stats.hp) {
-        f.currentHp = Math.min(f.stats.hp, f.currentHp + 1);
+      if (f.alive !== false && f.stats?.hp && (f.currentHp ?? f.stats.hp) < f.stats.hp) {
+        const maxHp = f.stats.hp;
+        const regenPerTick = maxHp / 360; // full regen in 60 min at 1 tick/10s
+        f.currentHp = Math.min(maxHp, (f.currentHp ?? maxHp) + regenPerTick);
         healed = true;
       }
     });
     if (healed) {
       await savePlayerData();
       if (document.getElementById('tab-roster').classList.contains('active')) renderRoster();
+      if (document.getElementById('tab-home').classList.contains('active')) renderHome();
     }
-  }, 60000); // 1 HP per minute
+  }, 10000); // every 10 seconds
 }
 
 // ===== HELPERS =====
@@ -808,15 +855,156 @@ function feralCardHTML(feral, clickable=true) {
 }
 
 // ===== ROSTER =====
+// Roster state
+let rosterFilter = 'all';
+let rosterSort = 'rarity';
+let dragSrcIdx = null;
+
+const rarityOrder = {common:0,uncommon:1,rare:2,epic:3,legendary:4};
+
+window.setRosterFilter = function(f) {
+  rosterFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filter-'+f)?.classList.add('active');
+  renderRoster();
+};
+
+window.setRosterSort = function(s) {
+  rosterSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sort-'+s)?.classList.add('active');
+  renderRoster();
+};
+
+function getSortedFilteredFerals() {
+  let ferals = [...(playerData.ferals||[])];
+  // Filter
+  if(rosterFilter==='alive') ferals = ferals.filter(f=>f.alive!==false);
+  if(rosterFilter==='fallen') ferals = ferals.filter(f=>f.alive===false);
+  // Sort (preserve manual order as base, then apply sort on top)
+  if(rosterSort==='rarity') ferals.sort((a,b)=>(rarityOrder[b.rarity]||0)-(rarityOrder[a.rarity]||0));
+  else if(rosterSort==='hp') ferals.sort((a,b)=>(b.stats?.hp||0)-(a.stats?.hp||0));
+  else if(rosterSort==='atk') ferals.sort((a,b)=>(b.stats?.atk||0)-(a.stats?.atk||0));
+  else if(rosterSort==='def') ferals.sort((a,b)=>(b.stats?.def||0)-(a.stats?.def||0));
+  else if(rosterSort==='spd') ferals.sort((a,b)=>(b.stats?.spd||0)-(a.stats?.spd||0));
+  else if(rosterSort==='wins') ferals.sort((a,b)=>(b.wins||0)-(a.wins||0));
+  else if(rosterSort==='name') ferals.sort((a,b)=>a.name.localeCompare(b.name));
+  return ferals;
+}
+
 function renderRoster() {
-  const ferals=playerData.ferals||[];
-  document.getElementById('rosterCount').textContent=`(${ferals.filter(f=>f.alive!==false).length}/6)`;
+  const allFerals = playerData.ferals||[];
+  const alive = allFerals.filter(f=>f.alive!==false).length;
+  document.getElementById('rosterCount').textContent=`(${alive}/100)`;
   const list=document.getElementById('rosterList');
-  if(ferals.length===0) { list.innerHTML=`<div class="empty-state"><span class="empty-icon">🪤</span>No Ferals yet!</div>`; return; }
-  list.innerHTML=ferals.map(f=>{
-    if(f.alive===false) return `<div class="card" style="opacity:0.4;margin-bottom:12px;"><div class="feral-card"><div class="feral-sprite" style="filter:grayscale(1);">${f.sprite}</div><div class="feral-info"><div class="feral-name">${f.name}</div><div class="feral-sub" style="color:var(--red);">✗ FALLEN IN BATTLE</div></div></div></div>`;
-    return feralCardHTML(f,true);
-  }).join('');
+  const ferals = getSortedFilteredFerals();
+  if(ferals.length===0) {
+    list.innerHTML=`<div class="empty-state"><span class="empty-icon">${rosterFilter==='fallen'?'💀':'🪤'}</span>${rosterFilter==='fallen'?'No fallen Ferals.':'No Ferals yet!<br>Set a trap to catch your first!'}</div>`;
+    return;
+  }
+  list.innerHTML=`<div class="feral-grid" id="feralGrid">${ferals.map((f,i)=>feralGridCard(f,i)).join('')}</div>`;
+  setupDragDrop();
+}
+
+function feralGridCard(f, idx) {
+  const hp = f.stats?.hp||50;
+  const curHp = f.currentHp??hp;
+  const hpPct = Math.max(0,Math.round((curHp/hp)*100));
+  const hpColor = hpPct>50?'var(--green)':hpPct>25?'var(--gold)':'var(--red)';
+  const fallen = f.alive===false;
+  const sc = shinyClass(f.shiny||'none');
+  const rarityColors = {common:'#94a3b8',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#f59e0b'};
+  const rc = rarityColors[f.rarity]||'#94a3b8';
+  const shinyIcon = f.shiny==='both'?'🌟':f.shiny==='glow'?'✨':f.shiny==='invert'?'🔄':'';
+  return `<div class="feral-grid-card ${fallen?'fallen-card':''}"
+    data-feral-id="${f.id}" data-idx="${idx}"
+    onclick="openFeralDetail('${f.id}')"
+    draggable="${!fallen}"
+    ondragstart="onDragStart(event,${idx})"
+    ondragover="onDragOver(event)"
+    ondrop="onDrop(event,${idx})"
+    ondragleave="onDragLeave(event)"
+    ondragend="onDragEnd(event)">
+    ${shinyIcon?`<span class="fgc-shiny-badge">${shinyIcon}</span>`:''}
+    ${fallen?'<span class="fgc-fallen-badge">💀</span>':''}
+    <span class="fgc-sprite ${sc}" style="${fallen?'filter:grayscale(1);':''}">${f.sprite}</span>
+    <div class="fgc-name">${f.name}</div>
+    ${!fallen?`<div class="fgc-hp"><div class="fgc-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`:''}
+    <span class="fgc-rarity" style="color:${rc};border-color:${rc};">${f.rarity.toUpperCase()}</span>
+    ${!fallen?`<div style="font-size:13px;color:var(--text2);margin-top:2px;">⚔️${f.wins||0} 💀${f.kills||0}</div>`:''}
+  </div>`;
+}
+
+function setupDragDrop() {
+  // Touch drag support for mobile
+  const cards = document.querySelectorAll('.feral-grid-card[draggable="true"]');
+  cards.forEach(card => {
+    let touchStartY, touchStartX, isDragging = false;
+    card.addEventListener('touchstart', e => {
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+      isDragging = false;
+    }, {passive:true});
+    card.addEventListener('touchmove', e => {
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+      const dx = Math.abs(e.touches[0].clientX - touchStartX);
+      if(dy > 10 || dx > 10) isDragging = true;
+    }, {passive:true});
+    card.addEventListener('touchend', e => {
+      if(!isDragging) return;
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const target = el?.closest('.feral-grid-card');
+      if(target && target !== card) {
+        const srcId = card.dataset.feralId;
+        const dstId = target.dataset.feralId;
+        swapFeralPositions(srcId, dstId);
+      }
+    });
+  });
+}
+
+window.onDragStart = function(e, idx) {
+  dragSrcIdx = idx;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+};
+
+window.onDragOver = function(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  e.dataTransfer.dropEffect = 'move';
+};
+
+window.onDragLeave = function(e) {
+  e.currentTarget.classList.remove('drag-over');
+};
+
+window.onDragEnd = function(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.feral-grid-card').forEach(c=>c.classList.remove('drag-over'));
+};
+
+window.onDrop = function(e, dstIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(dragSrcIdx === null || dragSrcIdx === dstIdx) return;
+  const sorted = getSortedFilteredFerals();
+  const srcFeral = sorted[dragSrcIdx];
+  const dstFeral = sorted[dstIdx];
+  if(!srcFeral || !dstFeral) return;
+  swapFeralPositions(srcFeral.id, dstFeral.id);
+};
+
+function swapFeralPositions(idA, idB) {
+  const ferals = playerData.ferals||[];
+  const idxA = ferals.findIndex(f=>f.id===idA);
+  const idxB = ferals.findIndex(f=>f.id===idB);
+  if(idxA===-1||idxB===-1) return;
+  [ferals[idxA], ferals[idxB]] = [ferals[idxB], ferals[idxA]];
+  playerData.ferals = ferals;
+  savePlayerData();
+  renderRoster();
 }
 
 window.openFeralDetail = function(feralId) {
@@ -852,10 +1040,13 @@ window.openFeralDetail = function(feralId) {
       <div class="item-slot" onclick="openEquipSlot('${feralId}','essence')"><div class="item-slot-type">ESSENCE</div><div class="item-slot-icon">${essence?essence.icon:'+'}</div><div class="item-slot-name">${essence?essence.name:'Empty'}</div></div>
       <div class="item-slot" onclick="openEquipSlot('${feralId}','stone')"><div class="item-slot-type">STONE</div><div class="item-slot-icon">${stone?stone.icon:'+'}</div><div class="item-slot-name">${stone?stone.name:'Empty'}</div></div>
     </div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
-      <button class="btn btn-green btn-sm" onclick="openHealMenu('${feralId}')">💊 USE ITEM</button>
-      <button class="btn btn-red btn-sm" onclick="releaseFeral('${feralId}')">🌿 RELEASE</button>
-    </div>
+    ${feral.alive===false ?
+      `<button class="btn btn-gray btn-sm" style="margin-top:16px;" onclick="releaseFeral('${feralId}')">🕊️ LAY TO REST (+7 Shards)</button>` :
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
+        <button class="btn btn-green btn-sm" onclick="openHealMenu('${feralId}')">💊 USE ITEM</button>
+        <button class="btn btn-red btn-sm" onclick="releaseFeral('${feralId}')">🌿 RELEASE</button>
+      </div>`
+    }
   `);
 };
 
@@ -946,16 +1137,21 @@ window.releaseFeral = async function(feralId) {
   const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
   if(idx===-1) return;
   const feral=playerData.ferals[idx];
+  const fallen = feral.alive===false;
   const rarityShards={common:15,uncommon:35,rare:75,epic:150,legendary:400};
-  const shards=rarityShards[feral.rarity]||15;
-  const xp=shards;
+  const aliveShards = rarityShards[feral.rarity]||15;
+  const shards = fallen ? 7 : aliveShards;
+  const xp = fallen ? 0 : aliveShards;
   playerData.ferals.splice(idx,1);
   playerData.shards=(playerData.shards||0)+shards;
-  playerData.tamerXp=(playerData.tamerXp||0)+xp;
-  playerData.totalShards=(playerData.totalShards||0)+shards;
-  checkTamerLevelUp();
+  if(!fallen) {
+    playerData.tamerXp=(playerData.tamerXp||0)+xp;
+    playerData.totalShards=(playerData.totalShards||0)+shards;
+    checkTamerLevelUp();
+  }
   await savePlayerData(); closeModal(); renderRoster(); updateTopbar();
-  showNotif(`🌿 Released! +${shards} Shards +${xp} XP`,'var(--green)');
+  if(fallen) showNotif(`🕊️ Laid to rest. +${shards} Shards`,'var(--text2)');
+  else showNotif(`🌿 Released! +${shards} Shards +${xp} XP`,'var(--green)');
 };
 
 function checkTamerLevelUp() {
@@ -1018,7 +1214,7 @@ window.claimTrap = async function() {
   }
 
   const alive=(playerData.ferals||[]).filter(f=>f.alive!==false);
-  if(alive.length>=6) {
+  if(alive.length>=100) {
     await savePlayerData(); renderTrap();
     openModal(`<div class="modal-title">ROSTER FULL!</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">${caught.sprite}</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">${caught.name} was caught but roster is full!<br>Release a Feral to make room.</div></div>`);
     return;
@@ -1066,7 +1262,8 @@ window.startBattle = function(feralId, isDungeon=false) {
   const feral=(playerData.ferals||[]).find(f=>f.id===feralId);
   if(!feral) return;
   document.getElementById('battleContent').style.display='none';
-  document.getElementById('battleArena').style.display='block';
+  document.getElementById('battleArena').style.display='flex';
+  document.getElementById('battleArena').style.flexDirection='column';
   document.getElementById('battleResultArea').style.display='none';
   document.getElementById('tameSection').style.display='none';
 
@@ -1325,7 +1522,7 @@ async function finishBattle() {
 
     // Show tame option
     const alive=(playerData.ferals||[]).filter(f=>f.alive!==false);
-    if(alive.length<6) {
+    if(alive.length<100) {
       document.getElementById('tameSection').style.display='block';
       document.getElementById('tameChanceText').textContent=`TAME CHANCE: ${tameChance}% (${enemy.name} at ${Math.max(0,Math.round(enemy.hp/enemy.maxHp*100))}% HP)`;
       window._tameChance=tameChance;
@@ -1462,6 +1659,7 @@ window.endBattle = function() {
   document.getElementById('battleControls').style.display='flex';
   document.getElementById('battleContent').style.display='block';
   document.getElementById('battleArena').style.display='none';
+  document.getElementById('battleArena').style.flexDirection='';
   renderBattleSelect();
 };
 
@@ -1687,4 +1885,3 @@ window.switchTab=switchTab;
 </script>
 </body>
 </html>
-
