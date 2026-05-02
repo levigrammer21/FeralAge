@@ -1,0 +1,39 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+  <style>@keyframes wind-spin { 0%,100%{opacity:0.3} 50%{opacity:0.8} }</style>
+  <rect x="0" y="7" width="2" height="1" fill="#bae6fd" opacity="0.4" style="animation:wind-spin 1.5s ease-in-out infinite"/>
+  <rect x="14" y="6" width="2" height="1" fill="#bae6fd" opacity="0.3" style="animation:wind-spin 2s ease-in-out infinite 0.3s"/>
+  <rect x="0" y="10" width="2" height="1" fill="#7dd3fc" opacity="0.3" style="animation:wind-spin 1.8s ease-in-out infinite 0.6s"/>
+  <rect x="14" y="11" width="2" height="1" fill="#7dd3fc" opacity="0.2" style="animation:wind-spin 2.2s ease-in-out infinite 0.9s"/>
+  <rect x="6" y="13" width="4" height="1" fill="#bae6fd" opacity="0.3"/>
+  <rect x="7" y="14" width="2" height="1" fill="#bae6fd" opacity="0.2"/>
+  <rect x="0" y="6" width="5" height="2" fill="#0c4a6e"/>
+  <rect x="0" y="8" width="4" height="2" fill="#0369a1"/>
+  <rect x="1" y="10" width="3" height="1" fill="#0c4a6e"/>
+  <rect x="0" y="7" width="4" height="1" fill="#bae6fd" opacity="0.2" style="animation:wind-spin 1s ease-in-out infinite"/>
+  <rect x="0" y="9" width="3" height="1" fill="#7dd3fc" opacity="0.15" style="animation:wind-spin 1.3s ease-in-out infinite 0.4s"/>
+  <rect x="11" y="6" width="5" height="2" fill="#0c4a6e"/>
+  <rect x="12" y="8" width="4" height="2" fill="#0369a1"/>
+  <rect x="12" y="10" width="3" height="1" fill="#0c4a6e"/>
+  <rect x="12" y="7" width="4" height="1" fill="#bae6fd" opacity="0.2" style="animation:wind-spin 1.2s ease-in-out infinite 0.2s"/>
+  <rect x="5" y="6" width="6" height="7" fill="#0c4a6e"/>
+  <rect x="4" y="7" width="1" height="6" fill="#0c4a6e"/>
+  <rect x="11" y="7" width="1" height="5" fill="#0c4a6e"/>
+  <rect x="6" y="8" width="4" height="4" fill="#0369a1"/>
+  <rect x="7" y="7" width="2" height="5" fill="#0284c7" opacity="0.6"/>
+  <rect x="7" y="9" width="2" height="2" fill="#bae6fd" opacity="0.3" style="animation:wind-spin 0.8s ease-in-out infinite"/>
+  <rect x="5" y="2" width="6" height="5" fill="#0c4a6e"/>
+  <rect x="5" y="2" width="6" height="2" fill="#e0f2fe" opacity="0.8"/>
+  <rect x="6" y="4" width="2" height="1" fill="#bae6fd" opacity="0.5"/>
+  <rect x="5" y="3" width="2" height="2" fill="#0ea5e9" opacity="0.9"/>
+  <rect x="5" y="3" width="1" height="1" fill="#e0f2fe"/>
+  <rect x="8" y="3" width="2" height="2" fill="#0ea5e9" opacity="0.9"/>
+  <rect x="8" y="3" width="1" height="1" fill="#e0f2fe"/>
+  <rect x="5" y="5" width="3" height="1" fill="#f97316"/>
+  <rect x="5" y="6" width="2" height="1" fill="#ea580c"/>
+  <rect x="5" y="13" width="2" height="2" fill="#0c4a6e"/>
+  <rect x="4" y="14" width="3" height="1" fill="#075985"/>
+  <rect x="9" y="13" width="2" height="2" fill="#0c4a6e"/>
+  <rect x="9" y="14" width="3" height="1" fill="#075985"/>
+  <rect x="3" y="14" width="2" height="1" fill="#bae6fd" opacity="0.3" style="animation:wind-spin 1s ease-in-out infinite 0.5s"/>
+  <rect x="11" y="14" width="2" height="1" fill="#bae6fd" opacity="0.3" style="animation:wind-spin 1.2s ease-in-out infinite 0.7s"/>
+</svg>
