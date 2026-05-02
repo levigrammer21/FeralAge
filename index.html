@@ -326,6 +326,10 @@
         </div>
         <div class="battle-log" id="battleLog"></div>
       </div>
+      <div id="battleControls" style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-gray btn-sm" onclick="fleeBattle()" style="flex:1;">🏃 FLEE</button>
+        <button class="btn btn-blue btn-sm" onclick="openSwapMenu()" style="flex:1;">🔄 SWAP</button>
+      </div>
       <div id="battleResultArea" style="display:none;">
         <div class="card" id="battleResult" style="text-align:center;"></div>
         <div id="tameSection" style="display:none;" class="tame-section">
@@ -462,6 +466,12 @@ const ITEMS_DATA = {
     { id:'ancient', name:'Ancient Essence', icon:'🗿', rarity:'rare', type:'essence', boost:{def:8,hp:5}, decline:{spd:6}, price:180, desc:'+DEF +HP / -SPD' },
     { id:'volatile', name:'Volatile Essence', icon:'💥', rarity:'epic', type:'essence', boost:{atk:12}, decline:{def:8,hp:10}, price:280, desc:'+ATK / -DEF -HP (high risk!)' },
   ],
+  healing: [
+    { id:'wild_herb', name:'Wild Herb', icon:'🌿', rarity:'common', type:'healing', healAmount:15, healAll:false, price:25, desc:'Restores 15 HP to one Feral' },
+    { id:'tonic', name:'Tonic', icon:'🧪', rarity:'uncommon', type:'healing', healAmount:35, healAll:false, price:60, desc:'Restores 35 HP to one Feral' },
+    { id:'elixir', name:'Elixir', icon:'⚗️', rarity:'rare', type:'healing', healAmount:999, healAll:false, price:200, desc:'Fully restores HP to one Feral' },
+    { id:'hearty_meal', name:'Hearty Meal', icon:'🍖', rarity:'uncommon', type:'healing', healAmount:20, healAll:true, price:100, desc:'Restores 20 HP to ALL your Ferals' },
+  ],
   stones: [
     { id:'emberstone', name:'Emberstone', icon:'🔥', rarity:'uncommon', type:'stone', effect:'burn', price:80, desc:'Adds burn chance on hit' },
     { id:'shockstone', name:'Shockstone', icon:'⚡', rarity:'uncommon', type:'stone', effect:'paralyze', price:80, desc:'Adds paralyze chance on hit' },
@@ -494,7 +504,105 @@ let selectedPlayerIdx = -1;
 let battleState = null;
 let battleInterval = null;
 let trapInterval = null;
+let restInterval = null;
 let currentBattleEnemy = null;
+let audioCtx = null;
+
+// ===== SOUND ENGINE =====
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, type, duration, volume=0.3, delay=0) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(volume, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + duration);
+  } catch(e) {}
+}
+
+function soundHit() {
+  playTone(220, 'square', 0.08, 0.25);
+  playTone(180, 'square', 0.06, 0.2, 0.05);
+}
+
+function soundSpecial() {
+  playTone(440, 'square', 0.06, 0.2);
+  playTone(550, 'square', 0.06, 0.2, 0.06);
+  playTone(660, 'square', 0.1, 0.25, 0.12);
+}
+
+function soundVictory() {
+  const notes = [523, 659, 784, 1047];
+  notes.forEach((n, i) => playTone(n, 'square', 0.15, 0.25, i * 0.12));
+}
+
+function soundDefeat() {
+  playTone(300, 'square', 0.1, 0.25);
+  playTone(250, 'square', 0.1, 0.25, 0.12);
+  playTone(200, 'square', 0.2, 0.25, 0.24);
+}
+
+function soundTame() {
+  const notes = [392, 494, 587, 784];
+  notes.forEach((n, i) => playTone(n, 'sine', 0.12, 0.2, i * 0.1));
+}
+
+function soundFlee() {
+  playTone(400, 'square', 0.05, 0.2);
+  playTone(300, 'square', 0.05, 0.2, 0.06);
+  playTone(200, 'square', 0.1, 0.2, 0.12);
+}
+
+function soundHeal() {
+  playTone(523, 'sine', 0.08, 0.2);
+  playTone(659, 'sine', 0.08, 0.2, 0.08);
+  playTone(784, 'sine', 0.12, 0.2, 0.16);
+}
+
+function soundSwap() {
+  playTone(350, 'square', 0.06, 0.2);
+  playTone(500, 'square', 0.08, 0.2, 0.07);
+}
+
+function soundShiny() {
+  const notes = [523, 659, 784, 1047, 1319];
+  notes.forEach((n, i) => playTone(n, 'sine', 0.1, 0.15, i * 0.08));
+}
+
+function soundCatch() {
+  playTone(392, 'square', 0.08, 0.2);
+  playTone(523, 'square', 0.08, 0.2, 0.09);
+  playTone(659, 'sine', 0.15, 0.2, 0.18);
+}
+
+// ===== REST HEALING =====
+function startRestHealing() {
+  if (restInterval) clearInterval(restInterval);
+  restInterval = setInterval(async () => {
+    if (!playerData || battleState) return;
+    let healed = false;
+    (playerData.ferals || []).forEach(f => {
+      if (f.alive !== false && f.currentHp && f.stats?.hp && f.currentHp < f.stats.hp) {
+        f.currentHp = Math.min(f.stats.hp, f.currentHp + 1);
+        healed = true;
+      }
+    });
+    if (healed) {
+      await savePlayerData();
+      if (document.getElementById('tab-roster').classList.contains('active')) renderRoster();
+    }
+  }, 60000); // 1 HP per minute
+}
 
 // ===== HELPERS =====
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
@@ -640,6 +748,7 @@ function enterGame() {
   switchTab('home');
   renderShop();
   renderTrap();
+  startRestHealing();
 }
 
 function updateTopbar() {
@@ -743,7 +852,10 @@ window.openFeralDetail = function(feralId) {
       <div class="item-slot" onclick="openEquipSlot('${feralId}','essence')"><div class="item-slot-type">ESSENCE</div><div class="item-slot-icon">${essence?essence.icon:'+'}</div><div class="item-slot-name">${essence?essence.name:'Empty'}</div></div>
       <div class="item-slot" onclick="openEquipSlot('${feralId}','stone')"><div class="item-slot-type">STONE</div><div class="item-slot-icon">${stone?stone.icon:'+'}</div><div class="item-slot-name">${stone?stone.name:'Empty'}</div></div>
     </div></div>
-    <button class="btn btn-red btn-sm" style="margin-top:16px;" onclick="releaseFeral('${feralId}')">🌿 RELEASE (+Tamer XP +Shards)</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px;">
+      <button class="btn btn-green btn-sm" onclick="openHealMenu('${feralId}')">💊 USE ITEM</button>
+      <button class="btn btn-red btn-sm" onclick="releaseFeral('${feralId}')">🌿 RELEASE</button>
+    </div>
   `);
 };
 
@@ -764,6 +876,69 @@ window.equipItem = async function(feralId,slotType,itemId) {
   playerData.ferals[idx][slotType]=itemId;
   await savePlayerData(); closeModal();
   showNotif(itemId?'✓ Equipped!':'✓ Unequipped!');
+  openFeralDetail(feralId);
+};
+
+window.openHealMenu = function(feralId) {
+  const feral = (playerData.ferals||[]).find(f=>f.id===feralId);
+  if(!feral) return;
+  const healItems = (playerData.inventory||[]).filter(i=>{
+    const item=findItem(i.itemId); return item&&item.type==='healing';
+  });
+  if(healItems.length===0) {
+    openModal(`<div class="modal-title">NO HEALING ITEMS</div><p style="text-align:center;color:var(--text2);margin-top:12px;">Buy healing items from the shop!<br><br>🌿 Wild Herb — 25 Shards<br>🧪 Tonic — 60 Shards<br>⚗️ Elixir — 200 Shards<br>🍖 Hearty Meal — 100 Shards</p>`);
+    return;
+  }
+  const curHp = feral.currentHp ?? feral.stats?.hp;
+  const maxHp = feral.stats?.hp;
+  openModal(`
+    <div class="modal-title">💊 HEAL ${feral.name.toUpperCase()}</div>
+    <p style="text-align:center;color:var(--text2);font-size:16px;margin-bottom:12px;">HP: ${curHp}/${maxHp}</p>
+    <div class="scroll-list">
+      ${healItems.map((inv,invIdx)=>{
+        const item=findItem(inv.itemId); if(!item) return '';
+        const healAmt = item.healAll ? `+${item.healAmount} ALL` : `+${Math.min(item.healAmount, maxHp-curHp)} HP`;
+        return `<div class="shop-item" onclick="useHealItem('${feralId}',${invIdx})">
+          <div class="shop-item-icon">${item.icon}</div>
+          <div class="shop-item-info">
+            <div class="shop-item-name">${item.name}</div>
+            <div class="shop-item-desc">${item.desc}</div>
+          </div>
+          <div style="color:var(--green);font-size:18px;">${healAmt}</div>
+        </div>`;
+      }).join('')}
+    </div>`);
+};
+
+window.useHealItem = async function(feralId, invIdx) {
+  const healInvItems = (playerData.inventory||[]).map((i,idx)=>({...i,_idx:idx})).filter(i=>{
+    const item=findItem(i.itemId); return item&&item.type==='healing';
+  });
+  const invItem = healInvItems[invIdx];
+  if(!invItem) return;
+  const item = findItem(invItem.itemId);
+  if(!item) return;
+
+  // Remove item from inventory
+  playerData.inventory.splice(invItem._idx, 1);
+
+  if(item.healAll) {
+    (playerData.ferals||[]).forEach(f=>{
+      if(f.alive!==false) f.currentHp=Math.min(f.stats?.hp||50,(f.currentHp??0)+item.healAmount);
+    });
+    showNotif(`🍖 All Ferals healed +${item.healAmount} HP!`,'var(--green)');
+  } else {
+    const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
+    if(idx!==-1){
+      const maxHp=playerData.ferals[idx].stats?.hp||50;
+      playerData.ferals[idx].currentHp=Math.min(maxHp,(playerData.ferals[idx].currentHp??0)+item.healAmount);
+    }
+    showNotif(`${item.icon} Used ${item.name}!`,'var(--green)');
+  }
+  soundHeal();
+  await savePlayerData();
+  closeModal();
+  renderRoster();
   openFeralDetail(feralId);
 };
 
@@ -855,6 +1030,7 @@ window.claimTrap = async function() {
   await savePlayerData(); renderTrap(); renderRoster();
 
   const sc=shinyClass(shiny);
+  if(shiny==='both') soundShiny(); else if(shiny!=='none') soundShiny(); else soundCatch();
   openModal(`
     <div class="modal-title">${shiny==='both'?'🌟 ULTRA SHINY CATCH!!!':shiny!=='none'?'✨ SHINY CATCH!':'FERAL CAUGHT!'}</div>
     <div style="text-align:center;padding:16px 0;">
@@ -1045,6 +1221,7 @@ function playerAttacks() {
   enemy.hp-=dmg;
   // Venomshell/Briarplate on enemy when enemy hits player — handled in enemy attacks
   addLog(`${isSpecial?'✨':'⚔️'} ${player.feral.name} used ${isSpecial?player.feral.specialAttack:player.feral.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
+  if(isSpecial) soundSpecial(); else soundHit();
   animateFighter('playerFighter',true);
   animateFighter('enemyFighter',false,true);
 }
@@ -1087,6 +1264,7 @@ function enemyAttacks() {
   // Ashenwing rebirth
   if(player.feral.feralId==='ashenwing'&&player.hp<=0&&!battleState.player.ashenwingRevived){battleState.player.ashenwingRevived=true;player.hp=Math.round(player.maxHp*0.15);addLog(`🔥 Rebirth! Ashenwing survives!`,'log-ability');}
   addLog(`${isSpecial?'✨':'🔴'} ${enemy.name} used ${isSpecial?enemy.specialAttack:enemy.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
+  if(isSpecial) soundSpecial(); else soundHit();
   animateFighter('enemyFighter',true);
   animateFighter('playerFighter',false,true);
 }
@@ -1102,6 +1280,7 @@ async function finishBattle() {
   if(!battleState) return;
   const {player,enemy,isDungeon}=battleState;
   const won=enemy.hp<=0;
+  document.getElementById('battleControls').style.display='none';
   document.getElementById('battleResultArea').style.display='block';
   const resultDiv=document.getElementById('battleResult');
 
@@ -1137,6 +1316,7 @@ async function finishBattle() {
     const hpBonus=Math.round((1-Math.max(0,hpPct))*40);
     const tameChance=Math.max(5,Math.min(90,50+tamerLv*3-rarityMod[enemy.rarity||'common']+hpBonus));
 
+    soundVictory();
     resultDiv.innerHTML=`
       <div style="color:var(--green);font-family:var(--pixel);font-size:10px;margin-bottom:12px;">🏆 VICTORY!</div>
       <div style="font-size:18px;color:var(--text2);margin-bottom:12px;">${player.feral.name} defeated ${enemy.name}!</div>
@@ -1154,6 +1334,7 @@ async function finishBattle() {
     const idx=(playerData.ferals||[]).findIndex(f=>f.id===player.feral.id);
     if(idx!==-1){playerData.ferals[idx].alive=false;playerData.ferals[idx].currentHp=0;}
     await savePlayerData(); renderRoster();
+    soundDefeat();
     resultDiv.innerHTML=`<div style="color:var(--red);font-family:var(--pixel);font-size:10px;margin-bottom:12px;">💀 DEFEATED</div><div style="font-size:18px;color:var(--text2);">${player.feral.name} has fallen in battle...<br>They are gone forever.</div>`;
     document.getElementById('playerFighter').classList.add('defeated');
   }
@@ -1172,6 +1353,7 @@ window.attemptTame = async function() {
     playerData.ferals=[...(playerData.ferals||[]),newFeral];
     playerData.totalCaught=(playerData.totalCaught||0)+1;
     await savePlayerData(); renderRoster();
+    soundTame();
     addLog(`🌿 TAMED! ${newFeral.name} joins your team!`,'log-tame');
     showNotif(`🌿 ${newFeral.name} tamed!`,'var(--green)');
   } else {
@@ -1180,9 +1362,104 @@ window.attemptTame = async function() {
   }
 };
 
+window.fleeBattle = function() {
+  if(!battleState || battleState.finished) return;
+  clearInterval(battleInterval);
+  battleState.finished = true;
+  soundFlee();
+  // Small shard penalty
+  const penalty = 5;
+  playerData.shards = Math.max(0, (playerData.shards||0) - penalty);
+  savePlayerData();
+  updateTopbar();
+  addLog(`🏃 You fled the battle! -${penalty} Shards`, 'log-info');
+  document.getElementById('battleControls').style.display = 'none';
+  document.getElementById('battleResultArea').style.display = 'block';
+  document.getElementById('tameSection').style.display = 'none';
+  document.getElementById('battleResult').innerHTML = `
+    <div style="font-family:var(--pixel);font-size:9px;color:var(--text2);margin-bottom:8px;">🏃 FLED!</div>
+    <div style="font-size:17px;color:var(--text2);">You escaped safely.<br><span style="color:var(--red);">-${penalty} Shards</span></div>`;
+};
+
+window.openSwapMenu = function() {
+  if(!battleState || battleState.finished) return;
+  const currentId = battleState.player.feral.id;
+  const available = (playerData.ferals||[]).filter(f =>
+    f.alive !== false &&
+    f.id !== currentId &&
+    (f.currentHp ?? f.stats?.hp) > 0
+  );
+  if(available.length === 0) {
+    showNotif('No healthy Ferals to swap in!', 'var(--red)');
+    return;
+  }
+  openModal(`
+    <div class="modal-title">🔄 SWAP FERAL</div>
+    <p style="text-align:center;color:var(--red);font-size:16px;margin-bottom:12px;">⚠️ Enemy gets a free hit when you swap!</p>
+    ${available.map(f => `
+      <div class="select-feral-item" onclick="doSwap('${f.id}')">
+        <div class="sfi-sprite ${shinyClass(f.shiny||'none')}">${f.sprite}</div>
+        <div class="sfi-info">
+          <div class="sfi-name">${f.name}</div>
+          <div class="sfi-stats">HP: ${f.currentHp??f.stats?.hp}/${f.stats?.hp} | ATK:${f.stats?.atk} SPD:${f.stats?.spd}</div>
+        </div>
+        <span class="rarity-badge ${getRarityClass(f.rarity)}">${f.rarity.toUpperCase()}</span>
+      </div>`).join('')}
+  `);
+};
+
+window.doSwap = function(feralId) {
+  closeModal();
+  if(!battleState || battleState.finished) return;
+  const newFeral = (playerData.ferals||[]).find(f => f.id === feralId);
+  if(!newFeral) return;
+
+  // Save current feral HP back
+  const curIdx = (playerData.ferals||[]).findIndex(f => f.id === battleState.player.feral.id);
+  if(curIdx !== -1) playerData.ferals[curIdx].currentHp = Math.max(0, battleState.player.hp);
+
+  soundSwap();
+  addLog(`🔄 ${newFeral.name} swapped in!`, 'log-info');
+
+  // Enemy gets free hit
+  const enemy = battleState.enemy;
+  let freeDmg = Math.max(1, Math.round(rollRange(enemy.atk-3, enemy.atk+3) - newFeral.stats.def * 0.3));
+  addLog(`⚡ ${enemy.name} lands a free hit! -${freeDmg}HP`, 'log-hit');
+  soundHit();
+
+  const newHp = Math.max(0, (newFeral.currentHp ?? newFeral.stats.hp) - freeDmg);
+  const night = isNighttime();
+  let nAtk = getStatWithItems(newFeral, 'atk');
+  let nDef = getStatWithItems(newFeral, 'def');
+  let nSpd = getStatWithItems(newFeral, 'spd');
+  if(newFeral.feralId==='lunnis'&&night){nAtk=Math.round(nAtk*1.25);nDef=Math.round(nDef*1.25);nSpd=Math.round(nSpd*1.25);}
+
+  battleState.player = {
+    feral: newFeral,
+    hp: newHp,
+    maxHp: newFeral.stats.hp,
+    sp: 0,
+    atk: nAtk, def: nDef, spd: nSpd,
+    ironhide: newFeral.feralId==='embrak'?5:0,
+    shadowstep: newFeral.feralId==='duskfang'?0.2:0,
+    riftserpent: newFeral.feralId==='riftserpent'?0.35:0,
+    stone: newFeral.stone?findItem(newFeral.stone):null,
+    poisoned:false, bleeding:false, paralyzed:false, burned:false,
+    ashenwingRevived:false, nebulodonCount:0, hexcoonRecoil:newFeral.feralId==='hexcoon',
+  };
+
+  updateBattleUI();
+  if(newHp <= 0) {
+    clearInterval(battleInterval);
+    battleState.finished = true;
+    setTimeout(finishBattle, 600);
+  }
+};
+
 window.endBattle = function() {
   if(battleInterval) clearInterval(battleInterval);
   battleState=null; currentBattleEnemy=null;
+  document.getElementById('battleControls').style.display='flex';
   document.getElementById('battleContent').style.display='block';
   document.getElementById('battleArena').style.display='none';
   renderBattleSelect();
@@ -1268,7 +1545,9 @@ function renderShop() {
   const list=document.getElementById('shopList');
   list.innerHTML=`
     <p class="helper-text">Items also drop from battles and traps!</p>
-    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">💎 TRINKETS</div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">💊 HEALING</div>
+    ${ITEMS_DATA.healing.map(i=>shopItemHTML(i)).join('')}
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">💎 TRINKETS</div>
     ${ITEMS_DATA.trinkets.map(i=>shopItemHTML(i)).join('')}
     <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">✨ ESSENCES</div>
     ${ITEMS_DATA.essences.map(i=>shopItemHTML(i)).join('')}
@@ -1408,3 +1687,4 @@ window.switchTab=switchTab;
 </script>
 </body>
 </html>
+
