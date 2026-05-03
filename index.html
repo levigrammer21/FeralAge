@@ -463,30 +463,25 @@
     <div id="tamerContent"></div>
   </div>
   <!-- MORE -->
-  <div id="tab-more" class="tab-content">
-    <div class="section-title">⋯ MORE</div>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div style="display:flex;flex-direction:column;gap:12px;">
+<!-- MORE -->
+<div id="tab-more" class="tab-content">
+  <div class="section-title">… MORE</div>
 
-  <button onclick="updateSavedFeralStats()" style="padding:10px;font-size:14px;">
-    🔧 Refresh All Ferals
-  </button>
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <button onclick="updateSavedFeralStats()" style="padding:10px;font-size:14px;">
+      🔧 Refresh All Ferals
+    </button>
 
-<div class="card" style="cursor:pointer;" onclick="switchTab('market')">Market</div>
-<div class="card" style="cursor:pointer;" onclick="switchTab('forage')">Forage</div>
-<div class="card" style="cursor:pointer;" onclick="switchTab('shop')">Shop</div>
-<div class="card" style="cursor:pointer;" onclick="switchTab('pvp')">PVP</div>
-<div class="card" style="cursor:pointer;" onclick="switchTab('leaderboard')">Leaderboard</div>
-<div class="card" style="cursor:pointer;" onclick="switchTab('tamer')">Tamer Profile</div>
-
-  <div class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTab('home')" id="nav-home"><span class="nav-icon">🏠</span>HOME</button>
-    <button class="nav-btn" onclick="switchTab('trap')" id="nav-trap"><span class="nav-icon">🪤</span>TRAP</button>
-    <button class="nav-btn" onclick="switchTab('roster')" id="nav-roster"><span class="nav-icon">🐾</span>FERALS</button>
-    <button class="nav-btn" onclick="switchTab('battle')" id="nav-battle"><span class="nav-icon">⚔️</span>BATTLE</button>
-    <button class="nav-btn" onclick="switchTab('more')" id="nav-more"><span class="nav-icon">⋯</span>MORE</button>
+    <div class="card" style="cursor:pointer;" onclick="switchTab('market')">Market</div>
+    <div class="card" style="cursor:pointer;" onclick="switchTab('forage')">Forage</div>
+    <div class="card" style="cursor:pointer;" onclick="switchTab('shop')">Shop</div>
+    <div class="card" style="cursor:pointer;" onclick="switchTab('pvp')">PVP</div>
+    <div class="card" style="cursor:pointer;" onclick="switchTab('leaderboard')">Leaderboard</div>
+    <div class="card" style="cursor:pointer;" onclick="switchTab('tamer')">Tamer Profile</div>
   </div>
 </div>
+
+<div class="bottom-nav">
 
 <!-- MODAL -->
 <div id="modalOverlay" class="modal-overlay" style="display:none;" onclick="closeModal(event)">
