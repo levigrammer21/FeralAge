@@ -1055,7 +1055,37 @@ async function checkPin() {
     pinInput=''; updatePinDots();
   }
 }
+async function refreshSavedFeralStatsOnce() {
+  if (!playerData || !Array.isArray(playerData.ferals)) return;
 
+  // Change this number any time you do another big stat rebalance
+  const CURRENT_BALANCE_VERSION = 1;
+
+  if (playerData.balanceVersion === CURRENT_BALANCE_VERSION) return;
+
+  playerData.ferals = playerData.ferals.map(f => {
+    const base = FERALS_DATA[f.feralId];
+    if (!base) return f;
+
+    const newStats = { ...base.baseStats };
+
+    return {
+      ...f,
+      name: base.name,
+      sprite: base.sprite,
+      rarity: base.rarity,
+      ability: base.ability,
+      basicAttack: base.basicAttack,
+      specialAttack: base.specialAttack,
+      stats: newStats,
+      currentHp: newStats.hp
+    };
+  });
+
+  playerData.balanceVersion = CURRENT_BALANCE_VERSION;
+  await savePlayerData();
+  showNotif('✅ Ferals updated to new stats!');
+  }
 function enterGame() {
   showScreen('gameScreen');
   updateTopbar();
