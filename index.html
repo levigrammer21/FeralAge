@@ -1087,6 +1087,7 @@ async function refreshSavedFeralStatsOnce() {
   showNotif('✅ Ferals updated to new stats!');
   }
 async function enterGame() {
+  await refreshSavedFeralStatsOnce();
   showScreen('gameScreen');
   updateTopbar();
   switchTab('home');
