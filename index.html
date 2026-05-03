@@ -1554,6 +1554,12 @@ window.claimTrap = async function() {
   const newFeral=generateFeralInstance(caught.id,shiny);
   playerData.ferals=[...(playerData.ferals||[]),newFeral];
   playerData.totalCaught=(playerData.totalCaught||0)+1;
+  playerData.dexSeen = playerData.dexSeen || {};
+playerData.dexSeen[newFeral.feralId] = playerData.dexSeen[newFeral.feralId] || { total:0, glow:false, invert:false, ultra:false };
+playerData.dexSeen[newFeral.feralId].total++;
+if(newFeral.shiny==='glow')   playerData.dexSeen[newFeral.feralId].glow  = true;
+if(newFeral.shiny==='invert') playerData.dexSeen[newFeral.feralId].invert = true;
+if(newFeral.shiny==='both')   playerData.dexSeen[newFeral.feralId].ultra  = true;
   await savePlayerData(); renderTrap(); renderRoster();
 
   if(shiny!=='none') soundShiny(); else soundCatch();
