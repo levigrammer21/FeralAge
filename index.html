@@ -1956,9 +1956,7 @@ async function finishBattle() {
   const resultDiv=document.getElementById('battleResult');
 
   if(won) {
-    const lootRoll=Math.random()*100;
-    const allItems=[...ITEMS_DATA.trinkets,...ITEMS_DATA.essences,...ITEMS_DATA.stones];
-    let loot=null;
+
     const lootRoll = Math.random() * 100;
 const allItems = [...ITEMS_DATA.trinkets, ...ITEMS_DATA.essences, ...ITEMS_DATA.stones];
 let loot = null;
