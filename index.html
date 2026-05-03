@@ -1611,6 +1611,8 @@ function renderBattleSelect() {
   const alive=(playerData.ferals||[]).filter(f=>f.alive!==false&&(f.currentHp??f.stats?.hp)>0);
   document.getElementById('battleContent').style.display='block';
   document.getElementById('battleArena').style.display='none';
+  document.getElementById('battleStep1').style.display='block';
+  document.getElementById('battleStep2').style.display='none';
   const list=document.getElementById('battleSelectList');
   if(alive.length===0) { list.innerHTML='<div class="empty-state"><span class="empty-icon">😔</span>No Ferals available!</div>'; return; }
   list.innerHTML = '';
@@ -1641,6 +1643,8 @@ window.searchForBattle = function(feralId) {
     poisoned:false,bleeding:false,paralyzed:false,burned:false,
   };
   previewEnemy.maxHp=previewEnemy.hp;
+  document.getElementById('battleStep1').style.display='none';
+  document.getElementById('battleStep2').style.display='block';
   const shinyLabel=enemyShiny==='both'?'🌟 ULTRA':enemyShiny!=='none'?'✨ SHINY':'';
   document.getElementById('battlePreview').innerHTML=
     '<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:12px;">OPPONENT FOUND!</div>'+
