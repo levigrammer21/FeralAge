@@ -1846,6 +1846,10 @@ function enemyAttacks() {
   if(player.feral.feralId==='glowtail'&&Math.random()<0.25){ addLog(`🌌 Auroraveil negated the attack!`,'log-ability'); return; }
   if(player.feral.feralId==='riftserpent'&&Math.random()<0.35){ addLog(`🌀 Dimensional Slip! Riftserpent phased out!`,'log-ability'); return; }
   if(player.feral.feralId==='starclaw'&&Math.random()<0.25){ addLog(`⭐ Celestial Map evaded the attack!`,'log-ability'); return; }
+  if(player.feral.feralId==='glintbug' && Math.random()<0.15){
+  addLog(`✨ Flicker! Glintbug dodged the attack!`,'log-ability');
+  return;
+  }
   let dmg=rollRange(enemy.atk-3,enemy.atk+5);
   let reduction=Math.max(0,player.def*0.3)+player.ironhide;
   if(player.feral.feralId==='galehawk') reduction+=dmg*0.2;
