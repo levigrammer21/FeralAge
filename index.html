@@ -2583,15 +2583,24 @@ function renderTamer(){
 }
 
 // ===== INIT =====
+// ===== INIT =====
 loadGameData()
   .then(() => {
-    console.log("✅ Data loaded");
+    console.log("✅ Game data loaded");
     renderLogin();
   })
   .catch(err => {
-    console.error("❌ Failed to load data:", err);
+    console.error("❌ Failed to load game data:", err);
+
+    // Still show player select so game doesn't look dead
     renderLogin();
+
+    alert("Failed to load ferals.json or items.json. Check file names and JSON format.");
   });
+
+window.showScreen = showScreen;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
 window.showScreen=showScreen;
 window.closeModal=closeModal;
 window.switchTab=switchTab;
