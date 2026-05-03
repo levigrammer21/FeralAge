@@ -1783,8 +1783,8 @@ function runBattleTick() {
 
     const { player, enemy } = battleState;
 
-    playerCharge += player.spd;
-    enemyCharge += enemy.spd;
+    playerCharge += player.spd * 0.5;
+enemyCharge += enemy.spd * 0.5;
     statusCharge += 1;
 
     if (playerCharge >= 100) {
