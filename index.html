@@ -1959,10 +1959,23 @@ async function finishBattle() {
     const lootRoll=Math.random()*100;
     const allItems=[...ITEMS_DATA.trinkets,...ITEMS_DATA.essences,...ITEMS_DATA.stones];
     let loot=null;
-    if(lootRoll<60){const c=allItems.filter(i=>i.rarity==='common');loot=c[Math.floor(Math.random()*c.length)];}
-    else if(lootRoll<85){const c=allItems.filter(i=>i.rarity==='uncommon');loot=c[Math.floor(Math.random()*c.length)];}
-    else if(lootRoll<97){const c=allItems.filter(i=>i.rarity==='rare');loot=c[Math.floor(Math.random()*c.length)];}
-    else{const c=allItems.filter(i=>i.rarity==='epic'||i.rarity==='legendary');loot=c[Math.floor(Math.random()*c.length)];}
+    const lootRoll = Math.random() * 100;
+const allItems = [...ITEMS_DATA.trinkets, ...ITEMS_DATA.essences, ...ITEMS_DATA.stones];
+let loot = null;
+
+if (lootRoll < 25) {
+  const c = allItems.filter(i => i.rarity === 'common');
+  loot = c[Math.floor(Math.random() * c.length)];
+} else if (lootRoll < 38) {
+  const c = allItems.filter(i => i.rarity === 'uncommon');
+  loot = c[Math.floor(Math.random() * c.length)];
+} else if (lootRoll < 45) {
+  const c = allItems.filter(i => i.rarity === 'rare');
+  loot = c[Math.floor(Math.random() * c.length)];
+} else if (lootRoll < 48) {
+  const c = allItems.filter(i => i.rarity === 'epic' || i.rarity === 'legendary');
+  loot = c[Math.floor(Math.random() * c.length)];
+}
 
     const shardReward=isDungeon?rollRange(30,60):rollRange(10,25);
     playerData.shards=(playerData.shards||0)+shardReward;
