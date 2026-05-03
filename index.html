@@ -2583,7 +2583,15 @@ function renderTamer(){
 }
 
 // ===== INIT =====
-renderLogin();
+loadGameData()
+  .then(() => {
+    console.log("✅ Data loaded");
+    renderLogin();
+  })
+  .catch(err => {
+    console.error("❌ Failed to load data:", err);
+    renderLogin();
+  });
 window.showScreen=showScreen;
 window.closeModal=closeModal;
 window.switchTab=switchTab;
