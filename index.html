@@ -1791,35 +1791,79 @@ function updateBattleUI() {
   document.getElementById('enemySPBar').style.width=Math.min(100,enemy.sp)+'%';
 }
 
-function runBattleTick() { if(battleInterval) clearInterval(battleInterval); battleInterval=setInterval(doBattleTick,1200); }
+function runBattleTick() {
+  if (battleInterval) clearInterval(battleInterval);
 
-function doBattleTick() {
-  if(!battleState||battleState.finished) return;
-  const {player,enemy}=battleState;
-  const playerFirst=player.spd>=enemy.spd||Math.random()<(player.spd/(player.spd+enemy.spd));
-  if(playerFirst) { playerAttacks(); if(!battleState.finished) enemyAttacks(); }
-  else { enemyAttacks(); if(!battleState.finished) playerAttacks(); }
+  let playerCharge = 0;
+  let enemyCharge = 0;
+  let statusCharge = 0;
 
-  // Tempus double action
-  if(player.feral.feralId==='tempus'&&Math.random()<0.25&&!battleState.finished) { addLog('⏰ Timestep! Tempus acts again!','log-ability'); playerAttacks(); }
-  if(enemy.feralId==='tempus'&&Math.random()<0.25&&!battleState.finished) { addLog('⏰ Timestep! Enemy Tempus acts again!','log-ability'); enemyAttacks(); }
+  battleInterval = setInterval(() => {
+    if (!battleState || battleState.finished) return;
 
-  // Status damage
-  if(player.poisoned&&!battleState.finished){player.hp-=3;addLog(`☠️ ${player.feral.name} is poisoned! -3HP`,'log-hit');}
-  if(player.bleeding&&!battleState.finished){player.hp-=4;addLog(`🩸 ${player.feral.name} bleeds! -4HP`,'log-hit');}
-  if(player.burned&&!battleState.finished){player.hp-=2;addLog(`🔥 ${player.feral.name} burns! -2HP`,'log-hit');}
-  if(enemy.poisoned&&!battleState.finished){enemy.hp-=3;addLog(`☠️ ${enemy.name} is poisoned! -3HP`,'log-hit');}
-  if(enemy.bleeding&&!battleState.finished){enemy.hp-=4;addLog(`🩸 ${enemy.name} bleeds! -4HP`,'log-hit');}
-  if(enemy.burned&&!battleState.finished){enemy.hp-=2;addLog(`🔥 ${enemy.name} burns! -2HP`,'log-hit');}
-  // Cindermane/Emberstride
-  if(player.feral.feralId==='cindermane'&&!battleState.finished){enemy.hp-=2;addLog('🔥 Emberstride burns the ground! -2HP','log-ability');}
-  // Mossfin regen
-  if(player.feral.feralId==='mossfin'&&!battleState.finished){player.hp=Math.min(player.maxHp,player.hp+2);addLog('🌿 Overgrowth! +2HP','log-ability');}
-  // Hexcoon recoil
-  if(player.hexcoonRecoil&&!battleState.finished){player.hp-=5;addLog('⚙️ Overclock recoil! -5HP','log-hit');}
+    const { player, enemy } = battleState;
 
-  updateBattleUI();
-  if(player.hp<=0||enemy.hp<=0){ clearInterval(battleInterval); battleState.finished=true; setTimeout(finishBattle,800); }
+    playerCharge += player.spd;
+    enemyCharge += enemy.spd;
+    statusCharge += 1;
+
+    if (playerCharge >= 100) {
+      playerCharge -= 100;
+      playerAttacks();
+    }
+
+    if (!battleState.finished && enemyCharge >= 100) {
+      enemyCharge -= 100;
+      enemyAttacks();
+    }
+
+    // Tempus double action
+    if (player.feral.feralId === 'tempus' && Math.random() < 0.25 && !battleState.finished) {
+      addLog('⏰ Timestep! Tempus acts again!', 'log-ability');
+      playerAttacks();
+    }
+
+    if (enemy.feralId === 'tempus' && Math.random() < 0.25 && !battleState.finished) {
+      addLog('⏰ Timestep! Enemy Tempus acts again!', 'log-ability');
+      enemyAttacks();
+    }
+
+    // Status damage every 12 ticks = about every 1.2 seconds
+    if (statusCharge >= 12) {
+      statusCharge = 0;
+
+      if (player.poisoned && !battleState.finished) { player.hp -= 3; addLog(`☠️ ${player.feral.name} is poisoned! -3HP`, 'log-hit'); }
+      if (player.bleeding && !battleState.finished) { player.hp -= 4; addLog(`🩸 ${player.feral.name} bleeds! -4HP`, 'log-hit'); }
+      if (player.burned && !battleState.finished) { player.hp -= 2; addLog(`🔥 ${player.feral.name} burns! -2HP`, 'log-hit'); }
+
+      if (enemy.poisoned && !battleState.finished) { enemy.hp -= 3; addLog(`☠️ ${enemy.name} is poisoned! -3HP`, 'log-hit'); }
+      if (enemy.bleeding && !battleState.finished) { enemy.hp -= 4; addLog(`🩸 ${enemy.name} bleeds! -4HP`, 'log-hit'); }
+      if (enemy.burned && !battleState.finished) { enemy.hp -= 2; addLog(`🔥 ${enemy.name} burns! -2HP`, 'log-hit'); }
+
+      if (player.feral.feralId === 'cindermane' && !battleState.finished) {
+        enemy.hp -= 2;
+        addLog('🔥 Emberstride burns the ground! -2HP', 'log-ability');
+      }
+
+      if (player.feral.feralId === 'mossfin' && !battleState.finished) {
+        player.hp = Math.min(player.maxHp, player.hp + 2);
+        addLog('🌿 Overgrowth! +2HP', 'log-ability');
+      }
+
+      if (player.hexcoonRecoil && !battleState.finished) {
+        player.hp -= 5;
+        addLog('⚙️ Overclock recoil! -5HP', 'log-hit');
+      }
+    }
+
+    updateBattleUI();
+
+    if (player.hp <= 0 || enemy.hp <= 0) {
+      clearInterval(battleInterval);
+      battleState.finished = true;
+      setTimeout(finishBattle, 800);
+    }
+  }, 100);
 }
 
 function playerAttacks() {
