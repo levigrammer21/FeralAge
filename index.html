@@ -208,7 +208,12 @@
   .recipe-card { background:var(--bg3); border:1px solid var(--border); padding:12px; margin-bottom:8px; }
   .recipe-name { font-family:var(--pixel); font-size:8px; color:var(--accent2); margin-bottom:6px; }
   .recipe-ingredients { color:var(--text2); font-size:15px; }
-
+.dex-card { background:var(--panel); border:2px solid var(--border); padding:8px 4px; text-align:center; position:relative; }
+.dex-card.dex-seen { border-color:var(--border); }
+.dex-card.dex-unseen { opacity:0.35; filter:grayscale(1); }
+.dex-shiny-row { display:flex; justify-content:center; gap:4px; margin-top:4px; flex-wrap:wrap; }
+.dex-shiny-pip { font-size:10px; padding:1px 4px; border:1px solid; font-family:var(--pixel); font-size:5px; }
+.dex-count-badge { position:absolute; top:3px; right:3px; background:var(--accent); color:white; font-family:var(--pixel); font-size:6px; padding:2px 4px; }
   /* Nickname input in modal */
   .nickname-input { width:100%; background:var(--bg3); border:2px solid var(--border); color:var(--text); font-family:var(--pixel); font-size:10px; padding:10px; margin-bottom:8px; outline:none; }
   .nickname-input:focus { border-color:var(--accent2); }
@@ -476,13 +481,23 @@
       <div class="card" style="cursor:pointer;" onclick="switchTab('tamer')"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">👤</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);">TAMER PROFILE</div><div style="color:var(--text2);font-size:16px;">Your stats and identity</div></div></div></div>
     </div>
   </div>
-
+<!-- DEX -->
+<div id="tab-dex" class="tab-content">
+  <div class="section-title">📖 FERAL DEX <span id="dexCount" style="color:var(--text2);font-size:14px;"></span></div>
+  <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
+    <button class="filter-btn active" onclick="setDexFilter('all')" id="dex-filter-all">ALL</button>
+    <button class="filter-btn" onclick="setDexFilter('caught')" id="dex-filter-caught">CAUGHT</button>
+    <button class="filter-btn" onclick="setDexFilter('unseen')" id="dex-filter-unseen">UNSEEN</button>
+  </div>
+  <div id="dexGrid" class="feral-grid"></div>
+</div>
   <div class="bottom-nav">
     <button class="nav-btn active" onclick="switchTab('home')" id="nav-home"><span class="nav-icon">🏠</span>HOME</button>
     <button class="nav-btn" onclick="switchTab('trap')" id="nav-trap"><span class="nav-icon">🪤</span>TRAP</button>
     <button class="nav-btn" onclick="switchTab('roster')" id="nav-roster"><span class="nav-icon">🐾</span>FERALS</button>
     <button class="nav-btn" onclick="switchTab('battle')" id="nav-battle"><span class="nav-icon">⚔️</span>BATTLE</button>
-    <button class="nav-btn" onclick="switchTab('more')" id="nav-more"><span class="nav-icon">⋯</span>MORE</button>
+    <button class="nav-btn" onclick="switchTab('dex')" id="nav-dex"><span class="nav-icon">📖</span>DEX</button>
+<button class="nav-btn" onclick="switchTab('more')" id="nav-more"><span class="nav-icon">⋯</span>MORE</button>
   </div>
 </div>
 
