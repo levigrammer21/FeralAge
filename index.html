@@ -1811,6 +1811,15 @@ function playerAttacks() {
   if(enemy.feralId==='galehawk') reduction+=dmg*0.2;
   const stone=player.stone;
   if(stone&&stone.effect==='void') reduction=Math.max(0,reduction*0.7);
+if(player.feral.feralId==='puffalo' && Math.random()<0.15){
+  dmg=Math.max(1,Math.round(dmg*0.5));
+  addLog(`💨 Puff Guard! Damage reduced!`,'log-ability');
+}
+
+if(player.feral.feralId==='mudillo'){
+  battleState.player.def+=1;
+  addLog(`🟤 Mud Coat! DEF rose!`,'log-ability');
+}
   dmg=Math.max(1,Math.round(dmg-reduction));
   if(stone){
     if(stone.effect==='recoil'){ dmg=Math.round(dmg*1.5); player.hp-=Math.round(dmg*0.15); addLog(`💥 Recoil! -${Math.round(dmg*0.15)}HP`,'log-hit'); }
