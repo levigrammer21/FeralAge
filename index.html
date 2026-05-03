@@ -2528,6 +2528,7 @@ window.setDexFilter = function(f) {
 function renderDex() {
   const allFeralIds = Object.keys(FERALS_DATA);
   const caught = playerData.ferals || [];
+const dexSaved = playerData.dexSeen || {};
 
   const dexMap = {};
   caught.forEach(f => {
