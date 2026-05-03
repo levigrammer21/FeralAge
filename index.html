@@ -1758,7 +1758,8 @@ window.startBattle = function(feralId, isDungeon, enemyOverride) {
   updateBattleUI();
   document.getElementById('battleLog').innerHTML='';
   addLog(`⚔️ A wild ${enemy.name} appears!`,'log-info');
-  if(enemyShiny!=='none') addLog(`${enemyShiny==='both'?'🌟 ULTRA SHINY':'✨ Shiny'} ${enemy.name}!`,'log-ability');
+const enemyShiny = enemy.shiny || 'none';
+if(enemyShiny!=='none') addLog(`${enemyShiny==='both'?'🌟 ULTRA SHINY':'✨ Shiny'} ${enemy.name}!`,'log-ability');
   if(night&&feral.feralId==='lunnis') addLog('🌙 Moonblessed activated!','log-ability');
   if(feral.feralId==='sylvix'&&Math.random()<0.4) { enemy.atk=Math.max(1,enemy.atk-3); addLog(`🦊 Pilferer! Sylvix steals enemy focus!`,'log-ability'); }
 
