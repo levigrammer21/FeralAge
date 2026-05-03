@@ -1434,9 +1434,9 @@ window.releaseFeral = async function(feralId) {
   if(idx===-1) return;
   const feral=playerData.ferals[idx];
   const fallen = feral.alive===false;
-  const rarityShards={common:15,uncommon:35,rare:75,epic:150,legendary:400};
+  const rarityShards={common:5,uncommon:10,rare:15,epic:25,legendary:50};
   const aliveShards = rarityShards[feral.rarity]||15;
-  const shards = fallen ? 7 : aliveShards;
+  const shards = fallen ? 3 : aliveShards;
   const xp = fallen ? 0 : aliveShards;
   playerData.ferals.splice(idx,1);
   playerData.shards=(playerData.shards||0)+shards;
