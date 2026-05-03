@@ -1611,8 +1611,6 @@ function renderBattleSelect() {
   const alive=(playerData.ferals||[]).filter(f=>f.alive!==false&&(f.currentHp??f.stats?.hp)>0);
   document.getElementById('battleContent').style.display='block';
   document.getElementById('battleArena').style.display='none';
-  document.getElementById('battleStep1').style.display='block';
-  document.getElementById('battleStep2').style.display='none';
   const list=document.getElementById('battleSelectList');
   if(alive.length===0) { list.innerHTML='<div class="empty-state"><span class="empty-icon">😔</span>No Ferals available!</div>'; return; }
   list.innerHTML = '';
