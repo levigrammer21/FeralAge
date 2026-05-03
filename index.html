@@ -1779,7 +1779,7 @@ function updateBattleUI() {
   const eHpPct=Math.max(0,Math.round((enemy.hp/enemy.maxHp)*100));
   document.getElementById('playerSprite').innerHTML=feralSpriteHTML(player.feral.feralId||player.feral.id,player.feral.shiny||'none','48px');
   document.getElementById('playerFighterName').textContent=player.feral.name;
-  document.getElementById('playerHPText').textContent=`${Math.max(0,player.hp)}/${player.maxHp}`;
+  document.getElementById('playerHPText').textContent=`${Math.max(0,Math.round(player.hp))}/${player.maxHp}`;
   document.getElementById('playerHPBar').style.width=pHpPct+'%';
   document.getElementById('playerHPBar').style.background=pHpPct>50?'var(--green)':pHpPct>25?'var(--gold)':'var(--red)';
   document.getElementById('playerSPText').textContent=`${Math.round(player.sp)}/100`;
