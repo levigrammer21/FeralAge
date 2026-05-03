@@ -186,6 +186,28 @@
   .shiny-badge-glow { color: var(--gold); border-color: var(--gold); }
   .shiny-badge-invert { color: var(--accent2); border-color: var(--accent2); }
   .shiny-badge-both { color: white; border-color: white; background: linear-gradient(90deg, gold, #c084fc); }
+  .market-listing { display:flex; align-items:center; gap:10px; padding:12px; background:var(--bg3); border:1px solid var(--border); margin-bottom:8px; cursor:pointer; }
+  .market-listing:active { border-color:var(--gold); }
+  .market-listing-info { flex:1; }
+  .market-listing-name { font-family:var(--pixel); font-size:8px; color:var(--text); }
+  .market-listing-sub { color:var(--text2); font-size:15px; margin-top:3px; }
+  .market-listing-price { color:var(--gold); font-size:20px; white-space:nowrap; }
+  .market-filter-bar { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px; }
+  .forage-area { background:var(--panel); border:2px solid var(--border); padding:20px; text-align:center; margin-bottom:16px; }
+  .forage-icon { font-size:56px; margin-bottom:12px; display:block; }
+  .material-card { display:flex; align-items:center; gap:10px; padding:10px; background:var(--bg3); border:1px solid var(--border); margin-bottom:6px; }
+  .tamer-stat-row { display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg3); border:1px solid var(--border); margin-bottom:6px; }
+  .tamer-stat-label { color:var(--text2); font-size:17px; }
+  .tamer-stat-val { color:var(--accent2); font-family:var(--pixel); font-size:9px; }
+  .tamer-avatar { width:80px; height:80px; background:var(--bg3); border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:48px; margin:0 auto 16px; }
+  .battle-preview { background:var(--panel); border:2px solid var(--border); padding:16px; margin-bottom:12px; text-align:center; }
+  .battle-preview-fighters { display:flex; align-items:center; justify-content:space-around; margin-bottom:12px; }
+  .battle-preview-fighter { text-align:center; }
+  .battle-preview-name { font-family:var(--pixel); font-size:7px; color:var(--text); margin-top:6px; }
+  .battle-preview-stats { color:var(--text2); font-size:14px; }
+  .recipe-card { background:var(--bg3); border:1px solid var(--border); padding:12px; margin-bottom:8px; }
+  .recipe-name { font-family:var(--pixel); font-size:8px; color:var(--accent2); margin-bottom:6px; }
+  .recipe-ingredients { color:var(--text2); font-size:15px; }
 
   /* Roster grid */
   .feral-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -276,9 +298,7 @@
     <div class="card" style="cursor:pointer;" onclick="switchTab('pvp')">
       <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">🤜</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--red);">PVP CHALLENGE</div><div style="color:var(--text2);font-size:16px;" id="pvpNotif">Challenge another tamer</div></div></div>
     </div>
-    <div class="card" style="cursor:pointer;" onclick="switchTab('tournament')">
-      <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">🏆</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--gold);">TOURNAMENT</div><div style="color:var(--text2);font-size:16px;">Bracket battle — who reigns?</div></div></div>
-    </div>
+
     <div class="card" style="cursor:pointer;" onclick="switchTab('leaderboard')">
       <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">📊</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);">LEADERBOARD</div><div style="color:var(--text2);font-size:16px;">Global stats & rankings</div></div></div>
     </div>
@@ -2543,6 +2563,8 @@ function renderForage(){
     '<div class="section-title">📖 DROPS AT Lv.'+fl+'</div>'+
     avail.map(m=>'<div class="material-card"><span style="font-size:24px;">'+m.icon+'</span><div><div style="font-family:var(--pixel);font-size:8px;">'+m.name+'</div><div style="color:var(--text2);font-size:15px;">'+m.desc+'</div></div><span class="rarity-badge '+getRarityClass(m.rarity)+'">'+m.rarity.toUpperCase()+'</span></div>').join('');
 }
+
+  document.querySelectorAll('.brew-btn').forEach(b=>b.addEventListener('click',()=>brewRecipe(b.dataset.recipeid)));
 
 window.startForage=async function(){playerData.forage={endTime:Date.now()+2*60*1000};await savePlayerData();renderForage();showNotif('🌿 Foraging! Back in 2 minutes.');};
 
