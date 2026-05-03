@@ -1,472 +1,67 @@
 {
   "trinkets": [
-    {
-      "id": "old_socks",
-      "name": "Old Socks",
-      "icon": "\ud83e\udde6",
-      "rarity": "common",
-      "type": "trinket",
-      "effect": {
-        "def": 1
-      },
-      "price": 2,
-      "desc": "+1 DEF (better than nothing!)"
-    },
-    {
-      "id": "bent_coin",
-      "name": "Bent Coin",
-      "icon": "\ud83e\ude99",
-      "rarity": "common",
-      "type": "trinket",
-      "effect": {
-        "atk": 1
-      },
-      "price": 20,
-      "desc": "+1 ATK"
-    },
-    {
-      "id": "crow_feather",
-      "name": "Crow Feather",
-      "icon": "\ud83e\udeb6",
-      "rarity": "common",
-      "type": "trinket",
-      "effect": {
-        "spd": 1
-      },
-      "price": 20,
-      "desc": "+1 SPD"
-    },
-    {
-      "id": "cracked_amulet",
-      "name": "Cracked Amulet",
-      "icon": "\ud83d\udcff",
-      "rarity": "uncommon",
-      "type": "trinket",
-      "effect": {
-        "def": 3
-      },
-      "price": 60,
-      "desc": "+3 DEF"
-    },
-    {
-      "id": "wolf_tooth",
-      "name": "Wolf Tooth Necklace",
-      "icon": "\ud83e\uddb7",
-      "rarity": "uncommon",
-      "type": "trinket",
-      "effect": {
-        "atk": 3
-      },
-      "price": 60,
-      "desc": "+3 ATK"
-    },
-    {
-      "id": "tattered_scarf",
-      "name": "Tattered Scarf",
-      "icon": "\ud83e\udde3",
-      "rarity": "uncommon",
-      "type": "trinket",
-      "effect": {
-        "hp": 5
-      },
-      "price": 60,
-      "desc": "+5 HP"
-    },
-    {
-      "id": "lucky_mushroom",
-      "name": "Lucky Mushroom",
-      "icon": "\ud83c\udf44",
-      "rarity": "uncommon",
-      "type": "trinket",
-      "effect": {
-        "hp": 4,
-        "spd": 2
-      },
-      "price": 70,
-      "desc": "+4 HP +2 SPD"
-    },
-    {
-      "id": "bone_ring",
-      "name": "Bone Ring",
-      "icon": "\ud83d\udc80",
-      "rarity": "uncommon",
-      "type": "trinket",
-      "effect": {
-        "atk": 2,
-        "def": 2
-      },
-      "price": 75,
-      "desc": "+2 ATK +2 DEF"
-    },
-    {
-      "id": "glowstone",
-      "name": "Glowstone Pendant",
-      "icon": "\ud83d\udca0",
-      "rarity": "rare",
-      "type": "trinket",
-      "effect": {
-        "def": 5,
-        "hp": 5
-      },
-      "price": 150,
-      "desc": "+5 DEF +5 HP"
-    },
-    {
-      "id": "fang_guard",
-      "name": "Fang Guard",
-      "icon": "\u2694\ufe0f",
-      "rarity": "rare",
-      "type": "trinket",
-      "effect": {
-        "atk": 5
-      },
-      "price": 150,
-      "desc": "+5 ATK"
-    },
-    {
-      "id": "frozen_tear",
-      "name": "Frozen Tear",
-      "icon": "\ud83e\uddca",
-      "rarity": "rare",
-      "type": "trinket",
-      "effect": {
-        "def": 4,
-        "spd": 3
-      },
-      "price": 160,
-      "desc": "+4 DEF +3 SPD"
-    },
-    {
-      "id": "stormband",
-      "name": "Stormband",
-      "icon": "\u26a1",
-      "rarity": "epic",
-      "type": "trinket",
-      "effect": {
-        "spd": 8,
-        "atk": 5
-      },
-      "price": 300,
-      "desc": "+8 SPD +5 ATK"
-    },
-    {
-      "id": "void_shard",
-      "name": "Void Shard",
-      "icon": "\ud83c\udf11",
-      "rarity": "epic",
-      "type": "trinket",
-      "effect": {
-        "atk": 7,
-        "def": 4
-      },
-      "price": 320,
-      "desc": "+7 ATK +4 DEF"
-    },
-    {
-      "id": "hollow_crown",
-      "name": "Hollow Crown",
-      "icon": "\ud83d\udc51",
-      "rarity": "legendary",
-      "type": "trinket",
-      "effect": {
-        "atk": 10,
-        "def": 10,
-        "spd": 10,
-        "hp": 10
-      },
-      "price": 800,
-      "desc": "+10 ALL STATS"
-    }
+    { "id": "old_socks", "name": "Old Socks", "icon": "🧦", "rarity": "common", "type": "trinket", "effect": { "def": 1 }, "price": 20, "desc": "+1 DEF (better than nothing!)" },
+    { "id": "bent_coin", "name": "Bent Coin", "icon": "🪙", "rarity": "common", "type": "trinket", "effect": { "atk": 1 }, "price": 20, "desc": "+1 ATK" },
+    { "id": "crow_feather", "name": "Crow Feather", "icon": "🪶", "rarity": "common", "type": "trinket", "effect": { "spd": 1 }, "price": 20, "desc": "+1 SPD" },
+    { "id": "cracked_amulet", "name": "Cracked Amulet", "icon": "📿", "rarity": "uncommon", "type": "trinket", "effect": { "def": 3 }, "price": 60, "desc": "+3 DEF" },
+    { "id": "wolf_tooth", "name": "Wolf Tooth Necklace", "icon": "🦷", "rarity": "uncommon", "type": "trinket", "effect": { "atk": 3 }, "price": 60, "desc": "+3 ATK" },
+    { "id": "tattered_scarf", "name": "Tattered Scarf", "icon": "🧣", "rarity": "uncommon", "type": "trinket", "effect": { "hp": 5 }, "price": 60, "desc": "+5 HP" },
+    { "id": "lucky_mushroom", "name": "Lucky Mushroom", "icon": "🍄", "rarity": "uncommon", "type": "trinket", "effect": { "hp": 4, "spd": 2 }, "price": 70, "desc": "+4 HP +2 SPD" },
+    { "id": "bone_ring", "name": "Bone Ring", "icon": "💀", "rarity": "uncommon", "type": "trinket", "effect": { "atk": 2, "def": 2 }, "price": 75, "desc": "+2 ATK +2 DEF" },
+    { "id": "glowstone", "name": "Glowstone Pendant", "icon": "💠", "rarity": "rare", "type": "trinket", "effect": { "def": 5, "hp": 5 }, "price": 150, "desc": "+5 DEF +5 HP" },
+    { "id": "fang_guard", "name": "Fang Guard", "icon": "⚔️", "rarity": "rare", "type": "trinket", "effect": { "atk": 5 }, "price": 150, "desc": "+5 ATK" },
+    { "id": "frozen_tear", "name": "Frozen Tear", "icon": "🧊", "rarity": "rare", "type": "trinket", "effect": { "def": 4, "spd": 3 }, "price": 160, "desc": "+4 DEF +3 SPD" },
+    { "id": "stormband", "name": "Stormband", "icon": "⚡", "rarity": "epic", "type": "trinket", "effect": { "spd": 8, "atk": 5 }, "price": 300, "desc": "+8 SPD +5 ATK" },
+    { "id": "void_shard", "name": "Void Shard", "icon": "🌑", "rarity": "epic", "type": "trinket", "effect": { "atk": 7, "def": 4 }, "price": 320, "desc": "+7 ATK +4 DEF" },
+    { "id": "hollow_crown", "name": "Hollow Crown", "icon": "👑", "rarity": "legendary", "type": "trinket", "effect": { "atk": 10, "def": 10, "spd": 10, "hp": 10 }, "price": 800, "desc": "+10 ALL STATS" }
   ],
   "essences": [
-    {
-      "id": "murky",
-      "name": "Murky Essence",
-      "icon": "\ud83c\udf11",
-      "rarity": "common",
-      "type": "essence",
-      "boost": {
-        "atk": 4
-      },
-      "decline": {
-        "spd": 3
-      },
-      "price": 40,
-      "desc": "+ATK / -SPD"
-    },
-    {
-      "id": "pale",
-      "name": "Pale Essence",
-      "icon": "\ud83c\udf2b\ufe0f",
-      "rarity": "common",
-      "type": "essence",
-      "boost": {
-        "def": 4
-      },
-      "decline": {
-        "atk": 3
-      },
-      "price": 40,
-      "desc": "+DEF / -ATK"
-    },
-    {
-      "id": "rushing",
-      "name": "Rushing Essence",
-      "icon": "\ud83d\udca8",
-      "rarity": "common",
-      "type": "essence",
-      "boost": {
-        "spd": 5
-      },
-      "decline": {
-        "def": 3
-      },
-      "price": 40,
-      "desc": "+SPD / -DEF"
-    },
-    {
-      "id": "bulky",
-      "name": "Bulky Essence",
-      "icon": "\ud83c\udf3f",
-      "rarity": "uncommon",
-      "type": "essence",
-      "boost": {
-        "hp": 10
-      },
-      "decline": {
-        "spd": 4
-      },
-      "price": 80,
-      "desc": "+HP / -SPD"
-    },
-    {
-      "id": "sharp",
-      "name": "Sharp Essence",
-      "icon": "\ud83d\udd2a",
-      "rarity": "uncommon",
-      "type": "essence",
-      "boost": {
-        "atk": 6
-      },
-      "decline": {
-        "hp": 8
-      },
-      "price": 80,
-      "desc": "+ATK / -HP"
-    },
-    {
-      "id": "ghostly",
-      "name": "Ghostly Essence",
-      "icon": "\ud83d\udc7b",
-      "rarity": "rare",
-      "type": "essence",
-      "boost": {
-        "spd": 8
-      },
-      "decline": {
-        "atk": 5
-      },
-      "price": 160,
-      "desc": "+SPD / -ATK"
-    },
-    {
-      "id": "ancient",
-      "name": "Ancient Essence",
-      "icon": "\ud83d\uddff",
-      "rarity": "rare",
-      "type": "essence",
-      "boost": {
-        "def": 8,
-        "hp": 5
-      },
-      "decline": {
-        "spd": 6
-      },
-      "price": 180,
-      "desc": "+DEF +HP / -SPD"
-    },
-    {
-      "id": "volatile",
-      "name": "Volatile Essence",
-      "icon": "\ud83d\udca5",
-      "rarity": "epic",
-      "type": "essence",
-      "boost": {
-        "atk": 12
-      },
-      "decline": {
-        "def": 8,
-        "hp": 10
-      },
-      "price": 280,
-      "desc": "+ATK / -DEF -HP"
-    }
-  ],
-  "stones": [
-    {
-      "id": "emberstone",
-      "name": "Emberstone",
-      "icon": "\ud83d\udd25",
-      "rarity": "uncommon",
-      "type": "stone",
-      "effect": "burn",
-      "price": 80,
-      "desc": "Adds burn chance on hit"
-    },
-    {
-      "id": "shockstone",
-      "name": "Shockstone",
-      "icon": "\u26a1",
-      "rarity": "uncommon",
-      "type": "stone",
-      "effect": "paralyze",
-      "price": 80,
-      "desc": "Adds paralyze chance on hit"
-    },
-    {
-      "id": "shadowstone",
-      "name": "Shadowstone",
-      "icon": "\ud83c\udf11",
-      "rarity": "rare",
-      "type": "stone",
-      "effect": "special",
-      "price": 150,
-      "desc": "Physical to Special attack"
-    },
-    {
-      "id": "bloodstone",
-      "name": "Bloodstone",
-      "icon": "\ud83e\ude78",
-      "rarity": "rare",
-      "type": "stone",
-      "effect": "lifesteal",
-      "price": 150,
-      "desc": "Heal 20% of damage dealt"
-    },
-    {
-      "id": "glassstone",
-      "name": "Glassstone",
-      "icon": "\ud83d\udc8e",
-      "rarity": "rare",
-      "type": "stone",
-      "effect": "recoil",
-      "price": 150,
-      "desc": "+50% damage but take recoil"
-    },
-    {
-      "id": "luckstone",
-      "name": "Luckstone",
-      "icon": "\ud83c\udf40",
-      "rarity": "uncommon",
-      "type": "stone",
-      "effect": "luck",
-      "price": 80,
-      "desc": "Random bonus effect each battle"
-    },
-    {
-      "id": "choicestone",
-      "name": "Choicestone",
-      "icon": "\u2696\ufe0f",
-      "rarity": "rare",
-      "type": "stone",
-      "effect": "choice",
-      "price": 150,
-      "desc": "+30% damage locked attack style"
-    },
-    {
-      "id": "mirrorstone",
-      "name": "Mirrorstone",
-      "icon": "\ud83e\ude9e",
-      "rarity": "rare",
-      "type": "stone",
-      "effect": "reflect",
-      "price": 150,
-      "desc": "Reflects 15% damage back"
-    },
-    {
-      "id": "froststone",
-      "name": "Froststone",
-      "icon": "\u2744\ufe0f",
-      "rarity": "rare",
-      "type": "stone",
-      "effect": "freeze",
-      "price": 160,
-      "desc": "15% chance to freeze enemy"
-    },
-    {
-      "id": "voidstone",
-      "name": "Voidstone",
-      "icon": "\ud83d\udd73\ufe0f",
-      "rarity": "epic",
-      "type": "stone",
-      "effect": "void",
-      "price": 300,
-      "desc": "Ignores 30% of enemy DEF"
-    },
-    {
-      "id": "twinstone",
-      "name": "Twinstone",
-      "icon": "\u270c\ufe0f",
-      "rarity": "epic",
-      "type": "stone",
-      "effect": "double",
-      "price": 320,
-      "desc": "10% chance to attack twice"
-    }
+    { "id": "murky", "name": "Murky Essence", "icon": "🌑", "rarity": "common", "type": "essence", "boost": { "atk": 4 }, "decline": { "spd": 3 }, "price": 40, "desc": "+ATK / -SPD" },
+    { "id": "pale", "name": "Pale Essence", "icon": "🌫️", "rarity": "common", "type": "essence", "boost": { "def": 4 }, "decline": { "atk": 3 }, "price": 40, "desc": "+DEF / -ATK" },
+    { "id": "rushing", "name": "Rushing Essence", "icon": "💨", "rarity": "common", "type": "essence", "boost": { "spd": 5 }, "decline": { "def": 3 }, "price": 40, "desc": "+SPD / -DEF" },
+    { "id": "bulky", "name": "Bulky Essence", "icon": "🌿", "rarity": "uncommon", "type": "essence", "boost": { "hp": 10 }, "decline": { "spd": 4 }, "price": 80, "desc": "+HP / -SPD" },
+    { "id": "sharp", "name": "Sharp Essence", "icon": "🔪", "rarity": "uncommon", "type": "essence", "boost": { "atk": 6 }, "decline": { "hp": 8 }, "price": 80, "desc": "+ATK / -HP" },
+    { "id": "ghostly", "name": "Ghostly Essence", "icon": "👻", "rarity": "rare", "type": "essence", "boost": { "spd": 8 }, "decline": { "atk": 5 }, "price": 160, "desc": "+SPD / -ATK" },
+    { "id": "ancient", "name": "Ancient Essence", "icon": "🗿", "rarity": "rare", "type": "essence", "boost": { "def": 8, "hp": 5 }, "decline": { "spd": 6 }, "price": 180, "desc": "+DEF +HP / -SPD" },
+    { "id": "volatile", "name": "Volatile Essence", "icon": "💥", "rarity": "epic", "type": "essence", "boost": { "atk": 12 }, "decline": { "def": 8, "hp": 10 }, "price": 280, "desc": "+ATK / -DEF -HP (high risk!)" }
   ],
   "healing": [
-    {
-      "id": "wild_herb",
-      "name": "Wild Herb",
-      "icon": "\ud83c\udf3f",
-      "rarity": "common",
-      "type": "healing",
-      "healAmount": 15,
-      "healAll": false,
-      "price": 25,
-      "desc": "Restores 15 HP to one Feral"
-    },
-    {
-      "id": "tonic",
-      "name": "Tonic",
-      "icon": "\ud83e\uddea",
-      "rarity": "uncommon",
-      "type": "healing",
-      "healAmount": 35,
-      "healAll": false,
-      "price": 60,
-      "desc": "Restores 35 HP to one Feral"
-    },
-    {
-      "id": "elixir",
-      "name": "Elixir",
-      "icon": "\u2697\ufe0f",
-      "rarity": "rare",
-      "type": "healing",
-      "healAmount": 999,
-      "healAll": false,
-      "price": 200,
-      "desc": "Fully restores HP to one Feral"
-    },
-    {
-      "id": "hearty_meal",
-      "name": "Hearty Meal",
-      "icon": "\ud83c\udf56",
-      "rarity": "uncommon",
-      "type": "healing",
-      "healAmount": 20,
-      "healAll": true,
-      "price": 100,
-      "desc": "Restores 20 HP to ALL Ferals"
-    },
-    {
-      "id": "soul_ember",
-      "name": "Soul Ember",
-      "icon": "\ud83d\udd6f\ufe0f",
-      "rarity": "epic",
-      "type": "revival",
-      "price": 100,
-      "desc": "Revives a fallen Feral with 25% HP"
-    }
+    { "id": "wild_herb", "name": "Wild Herb", "icon": "🌿", "rarity": "common", "type": "healing", "healAmount": 15, "healAll": false, "price": 5, "desc": "Restores 15 HP to one Feral" },
+    { "id": "tonic", "name": "Tonic", "icon": "🧪", "rarity": "uncommon", "type": "healing", "healAmount": 35, "healAll": false, "price": 10, "desc": "Restores 35 HP to one Feral" },
+    { "id": "elixir", "name": "Elixir", "icon": "⚗️", "rarity": "rare", "type": "healing", "healAmount": 999, "healAll": false, "price": 30, "desc": "Fully restores HP to one Feral" },
+    { "id": "hearty_meal", "name": "Hearty Meal", "icon": "🍖", "rarity": "uncommon", "type": "healing", "healAmount": 20, "healAll": true, "price": 40, "desc": "Restores 20 HP to ALL your Ferals" },
+    { "id": "soul_ember", "name": "Soul Ember", "icon": "🕯️", "rarity": "epic", "type": "revival", "price": 75, "desc": "Revives a fallen Feral with 25% HP" }
+  ],
+  "stones": [
+    { "id": "emberstone", "name": "Emberstone", "icon": "🔥", "rarity": "uncommon", "type": "stone", "effect": "burn", "price": 80, "desc": "Adds burn chance on hit" },
+    { "id": "shockstone", "name": "Shockstone", "icon": "⚡", "rarity": "uncommon", "type": "stone", "effect": "paralyze", "price": 80, "desc": "Adds paralyze chance on hit" },
+    { "id": "shadowstone", "name": "Shadowstone", "icon": "🌑", "rarity": "rare", "type": "stone", "effect": "special", "price": 150, "desc": "Physical → Special attack" },
+    { "id": "bloodstone", "name": "Bloodstone", "icon": "🩸", "rarity": "rare", "type": "stone", "effect": "lifesteal", "price": 150, "desc": "Heal 20% of damage dealt" },
+    { "id": "glassstone", "name": "Glassstone", "icon": "💎", "rarity": "rare", "type": "stone", "effect": "recoil", "price": 150, "desc": "+50% damage but take recoil" },
+    { "id": "luckstone", "name": "Luckstone", "icon": "🍀", "rarity": "uncommon", "type": "stone", "effect": "luck", "price": 80, "desc": "Random bonus effect each battle" },
+    { "id": "choicestone", "name": "Choicestone", "icon": "⚖️", "rarity": "rare", "type": "stone", "effect": "choice", "price": 150, "desc": "+30% damage, locked attack style" },
+    { "id": "mirrorstone", "name": "Mirrorstone", "icon": "🪞", "rarity": "rare", "type": "stone", "effect": "reflect", "price": 150, "desc": "Reflects 15% damage back" },
+    { "id": "froststone", "name": "Froststone", "icon": "❄️", "rarity": "rare", "type": "stone", "effect": "freeze", "price": 160, "desc": "15% chance to freeze enemy for 1 round" },
+    { "id": "voidstone", "name": "Voidstone", "icon": "🕳️", "rarity": "epic", "type": "stone", "effect": "void", "price": 300, "desc": "Ignores 30% of enemy DEF" },
+    { "id": "twinstone", "name": "Twinstone", "icon": "✌️", "rarity": "epic", "type": "stone", "effect": "double", "price": 320, "desc": "10% chance to attack twice in one round" }
+  ],
+  "forageMaterials": [
+    { "id": "wild_herb_mat", "name": "Wild Herb", "icon": "🌿", "rarity": "common", "type": "material", "minLevel": 1, "desc": "A common healing herb" },
+    { "id": "glowshroom", "name": "Glowshroom", "icon": "🍄", "rarity": "common", "type": "material", "minLevel": 1, "desc": "A softly glowing mushroom" },
+    { "id": "river_moss", "name": "River Moss", "icon": "🟢", "rarity": "common", "type": "material", "minLevel": 1, "desc": "Damp moss from a riverbank" },
+    { "id": "ironpetal", "name": "Ironpetal", "icon": "🌸", "rarity": "uncommon", "type": "material", "minLevel": 3, "desc": "A rare petal with metallic sheen" },
+    { "id": "moonroot", "name": "Moonroot", "icon": "🫚", "rarity": "uncommon", "type": "material", "minLevel": 3, "desc": "A root that glows faintly at night" },
+    { "id": "flintstone", "name": "Flintstone", "icon": "🪨", "rarity": "common", "type": "material", "minLevel": 1, "desc": "A sharp grey stone" },
+    { "id": "embercrystal", "name": "Ember Crystal", "icon": "🔴", "rarity": "uncommon", "type": "material", "minLevel": 4, "desc": "A crystal warm to the touch" },
+    { "id": "voidpowder", "name": "Void Powder", "icon": "🟣", "rarity": "rare", "type": "material", "minLevel": 6, "desc": "Dark powder from another dimension" },
+    { "id": "starstone", "name": "Starstone", "icon": "⭐", "rarity": "rare", "type": "material", "minLevel": 7, "desc": "A fragment of fallen star" },
+    { "id": "dragonscale_shard", "name": "Dragon Scale Shard", "icon": "💠", "rarity": "rare", "type": "material", "minLevel": 8, "desc": "A shard of ancient dragon scale" }
+  ],
+  "herbloreRecipes": [
+    { "id": "minor_potion", "name": "Minor Potion", "icon": "🧪", "result": "wild_herb", "ingredients": ["wild_herb_mat", "river_moss"], "minLevel": 1, "desc": "Restores 15 HP" },
+    { "id": "glow_tonic", "name": "Glow Tonic", "icon": "💚", "result": "tonic", "ingredients": ["glowshroom", "moonroot"], "minLevel": 3, "desc": "Restores 35 HP" },
+    { "id": "ember_elixir", "name": "Ember Elixir", "icon": "🔥", "result": "elixir", "ingredients": ["embercrystal", "ironpetal", "moonroot"], "minLevel": 5, "desc": "Fully restores HP" },
+    { "id": "feast_brew", "name": "Feast Brew", "icon": "🍖", "result": "hearty_meal", "ingredients": ["wild_herb_mat", "glowshroom", "river_moss", "flintstone"], "minLevel": 2, "desc": "Restores 20 HP to ALL Ferals" },
+    { "id": "soul_brew", "name": "Soul Brew", "icon": "🕯️", "result": "soul_ember", "ingredients": ["voidpowder", "starstone", "dragonscale_shard"], "minLevel": 8, "desc": "Revives a fallen Feral" }
   ]
 }
