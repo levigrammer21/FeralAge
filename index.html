@@ -1946,7 +1946,34 @@ function animateFighter(id,isAttacking,isHurt=false){
   if(isAttacking) el.classList.add(id==='playerFighter'?'attacking':'attacking-right');
   else if(isHurt) el.classList.add('hurt');
 }
+window.updateSavedFeralStats = async function() {
+  if (!playerData || !playerData.ferals) return;
 
+  playerData.ferals = playerData.ferals.map(f => {
+    const base = FERALS_DATA[f.feralId];
+    if (!base) return f;
+
+    const newStats = { ...base.baseStats };
+
+    return {
+      ...f,
+      name: base.name,
+      sprite: base.sprite,
+      rarity: base.rarity,
+      ability: base.ability,
+      basicAttack: base.basicAttack,
+      specialAttack: base.specialAttack,
+      stats: newStats,
+      currentHp: newStats.hp // FULL HEAL
+    };
+  });
+
+  await savePlayerData();
+  renderRoster();
+  renderHome();
+  updateTopbar();
+  showNotif('✅ All Ferals refreshed + fully healed!');
+};
 async function finishBattle() {
   if(!battleState) return;
   const {player,enemy,isDungeon}=battleState;
