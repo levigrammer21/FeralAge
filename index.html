@@ -536,7 +536,11 @@ const FERALS_DATA = {
   cluckle:{id:'cluckle',name:'Cluckle',sprite:'cluckle',rarity:'common',baseStats:{hp:100,atk:20,def:20,spd:20},ability:{name:'Static Feathers',desc:'25% chance to paralyze attacker on contact'},basicAttack:'Thunder Peck',specialAttack:'Zap Cluck'},
   mossfin:{id:'mossfin',name:'Mossfin',sprite:'mossfin',rarity:'common',baseStats:{hp:121,atk:12,def:29,spd:17},ability:{name:'Overgrowth',desc:'Slowly regenerates HP each round'},basicAttack:'Fin Slap',specialAttack:'Moss Wave'},
   snarlpup:{id:'snarlpup',name:'Snarlpup',sprite:'snarlpup',rarity:'common',baseStats:{hp:117,atk:19,def:17,spd:19},ability:{name:'Briar Coat',desc:'Thorns deal minor damage back'},basicAttack:'Thorn Bite',specialAttack:'Bramble Rush'},
-
+  snipsnap:{id:'snipsnap',name:'Snipsnap',sprite:'snipsnap',rarity:'common',baseStats:{hp:88,atk:18,def:14,spd:23},ability:{name:'Quick Snip',desc:'10% chance to strike twice'},basicAttack:'Claw Clip',specialAttack:'Scissor Frenzy'},
+  puffalo:{id:'puffalo',name:'Puffalo',sprite:'puffalo',rarity:'common',baseStats:{hp:130,atk:12,def:30,spd:13},ability:{name:'Puff Guard',desc:'15% chance to reduce incoming damage'},basicAttack:'Cloud Bump',specialAttack:'Gale Snort'},
+  glintbug:{id:'glintbug',name:'Glintbug',sprite:'glintbug',rarity:'common',baseStats:{hp:82,atk:16,def:13,spd:26},ability:{name:'Flicker',desc:'15% chance to dodge incoming attacks'},basicAttack:'Glint Bite',specialAttack:'Flash Swarm'},
+  mudillo:{id:'mudillo',name:'Mudillo',sprite:'mudillo',rarity:'common',baseStats:{hp:118,atk:17,def:24,spd:14},ability:{name:'Mud Coat',desc:'Gains extra toughness after being hit'},basicAttack:'Mud Roll',specialAttack:'Bog Slam'},
+  
   coralwing:{id:'coralwing',name:'Coralwing',sprite:'coralwing',rarity:'uncommon',baseStats:{hp:115,atk:21,def:18,spd:23},ability:{name:'Venomshell',desc:'Poisons enemies that deal physical damage'},basicAttack:'Reef Talon',specialAttack:'Coral Dive'},
   thornback:{id:'thornback',name:'Thornback',sprite:'thornback',rarity:'uncommon',baseStats:{hp:162,atk:13,def:37,spd:10},ability:{name:'Briarplate',desc:'Bleeds enemies that deal physical damage'},basicAttack:'Thorn Bash',specialAttack:'Ancient Shell'},
   cindermane:{id:'cindermane',name:'Cindermane',sprite:'cindermane',rarity:'uncommon',baseStats:{hp:131,atk:22,def:15,spd:23},ability:{name:'Emberstride',desc:'Leaves burning ground dealing damage each round'},basicAttack:'Hoof Crash',specialAttack:'Inferno Gallop'},
@@ -577,6 +581,10 @@ const FERAL_LORE = {
   cluckle: "Cluckle doesn't mean to zap things. It just gets excited. Everything gets zapped when Cluckle gets excited.",
   mossfin: "Mossfin walked out of the ocean 400 years ago and never looked back. The ocean has not forgiven it.",
   snarlpup: "Snarlpup wants to be your friend. The thorns are not intentional. The thorns are very much intentional.",
+  snipsnap: "Snipsnap cuts things it dislikes. Snipsnap dislikes most things.",
+  puffalo: "Puffalo is 80% fluff, 20% stubbornness, and somehow heavier than both.",
+  glintbug: "Glintbug flickers between here and somewhere slightly shinier.",
+  mudillo: "Mudillo rolls through mud for protection. Also because it enjoys the drama.",
   coralwing: "Coralwing nests at the bottom of the ocean and hunts at the top of the sky. Nobody has explained how.",
   thornback: "Thornback has been alive for 600 years. It has seen empires fall. It is not impressed by you.",
   cindermane: "Cindermane's mane has been burning since birth. Vets are baffled. Cindermane seems fine with it.",
@@ -992,7 +1000,7 @@ async function getAllPlayersData() {
 // ===== LOGIN =====
 // Rotating sprite IDs — uses SVG sprites if available, emoji fallback
 const LOGIN_SPRITE_ROTATION = ['sylvix','lunnis','duskfang','tempus','detonax','tyranus','hexcoon','ashenwing','voidfin','embrak'];
-const LOGIN_SPRITE_FALLBACKS = {sylvix:'🦊',lunnis:'🐇',duskfang:'🐺',tempus:'🐱',detonax:'🦀',tyranus:'🦖',hexcoon:'🦝',ashenwing:'🐉',voidfin:'🦈',embrak:'🐻'};
+const LOGIN_SPRITE_FALLBACKS = {sylvix:'🦊',lunnis:'🐇',duskfang:'🐺',tempus:'🐱',detonax:'🦀',tyranus:'🦖',snipsnap:'🦀',puffalo:'🐃',glintbug:'🐛',mudillo:'🦔',hexcoon:'🦝',ashenwing:'🐉',voidfin:'🦈',embrak:'🐻'};
 
 function renderLogin() {
   let rotIdx = Math.floor(Math.random() * LOGIN_SPRITE_ROTATION.length);
