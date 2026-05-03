@@ -1641,8 +1641,6 @@ window.searchForBattle = function(feralId) {
     poisoned:false,bleeding:false,paralyzed:false,burned:false,
   };
   previewEnemy.maxHp=previewEnemy.hp;
-  document.getElementById('battleStep1').style.display='none';
-  document.getElementById('battleStep2').style.display='block';
   const shinyLabel=enemyShiny==='both'?'🌟 ULTRA':enemyShiny!=='none'?'✨ SHINY':'';
   document.getElementById('battlePreview').innerHTML=
     '<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:12px;">OPPONENT FOUND!</div>'+
