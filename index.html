@@ -186,6 +186,28 @@
   .shiny-badge-glow { color: var(--gold); border-color: var(--gold); }
   .shiny-badge-invert { color: var(--accent2); border-color: var(--accent2); }
   .shiny-badge-both { color: white; border-color: white; background: linear-gradient(90deg, gold, #c084fc); }
+  .market-listing { display:flex; align-items:center; gap:10px; padding:12px; background:var(--bg3); border:1px solid var(--border); margin-bottom:8px; cursor:pointer; }
+  .market-listing:active { border-color:var(--gold); }
+  .market-listing-info { flex:1; }
+  .market-listing-name { font-family:var(--pixel); font-size:8px; color:var(--text); }
+  .market-listing-sub { color:var(--text2); font-size:15px; margin-top:3px; }
+  .market-listing-price { color:var(--gold); font-size:20px; white-space:nowrap; }
+  .market-filter-bar { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px; }
+  .forage-area { background:var(--panel); border:2px solid var(--border); padding:20px; text-align:center; margin-bottom:16px; }
+  .forage-icon { font-size:56px; margin-bottom:12px; display:block; }
+  .material-card { display:flex; align-items:center; gap:10px; padding:10px; background:var(--bg3); border:1px solid var(--border); margin-bottom:6px; }
+  .tamer-stat-row { display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg3); border:1px solid var(--border); margin-bottom:6px; }
+  .tamer-stat-label { color:var(--text2); font-size:17px; }
+  .tamer-stat-val { color:var(--accent2); font-family:var(--pixel); font-size:9px; }
+  .tamer-avatar { width:80px; height:80px; background:var(--bg3); border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:48px; margin:0 auto 16px; }
+  .battle-preview { background:var(--panel); border:2px solid var(--border); padding:16px; margin-bottom:12px; text-align:center; }
+  .battle-preview-fighters { display:flex; align-items:center; justify-content:space-around; margin-bottom:12px; }
+  .battle-preview-fighter { text-align:center; }
+  .battle-preview-name { font-family:var(--pixel); font-size:7px; color:var(--text); margin-top:6px; }
+  .battle-preview-stats { color:var(--text2); font-size:14px; }
+  .recipe-card { background:var(--bg3); border:1px solid var(--border); padding:12px; margin-bottom:8px; }
+  .recipe-name { font-family:var(--pixel); font-size:8px; color:var(--accent2); margin-bottom:6px; }
+  .recipe-ingredients { color:var(--text2); font-size:15px; }
 
   /* Roster grid */
   .feral-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -276,9 +298,7 @@
     <div class="card" style="cursor:pointer;" onclick="switchTab('pvp')">
       <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">🤜</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--red);">PVP CHALLENGE</div><div style="color:var(--text2);font-size:16px;" id="pvpNotif">Challenge another tamer</div></div></div>
     </div>
-    <div class="card" style="cursor:pointer;" onclick="switchTab('tournament')">
-      <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">🏆</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--gold);">TOURNAMENT</div><div style="color:var(--text2);font-size:16px;">Bracket battle — who reigns?</div></div></div>
-    </div>
+
     <div class="card" style="cursor:pointer;" onclick="switchTab('leaderboard')">
       <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:36px;">📊</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);">LEADERBOARD</div><div style="color:var(--text2);font-size:16px;">Global stats & rankings</div></div></div>
     </div>
@@ -343,9 +363,19 @@
   <!-- BATTLE -->
   <div id="tab-battle" class="tab-content" style="padding:8px;">
     <div id="battleContent">
-      <div class="section-title">⚔️ BATTLE</div>
-      <p class="helper-text">Select a Feral to send into battle!<br>Win → try to tame the wild Feral!</p>
-      <div id="battleSelectList" class="select-feral-list"></div>
+      <div id="battleStep1">
+        <div class="section-title">⚔️ BATTLE</div>
+        <p class="helper-text">Pick your Feral then search for an opponent!</p>
+        <div id="battleSelectList" class="select-feral-list"></div>
+      </div>
+      <div id="battleStep2" style="display:none;">
+        <div class="battle-preview" id="battlePreview"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn btn-green" onclick="confirmFight()">⚔️ FIGHT!</button>
+          <button class="btn btn-red" onclick="fleePreview()">🏃 FLEE (-5 💎)</button>
+        </div>
+        <button class="btn btn-gray btn-sm" style="margin-top:8px;" onclick="renderBattleSelect()">← BACK</button>
+      </div>
     </div>
     <div id="battleArena" style="display:none;height:calc(100vh - 130px);display:none;flex-direction:column;">
       <!-- Fighters row -->
@@ -477,8 +507,47 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ===== FERAL & ITEM DATA (loaded from JSON) =====
-let FERALS_DATA = {};
+// ===== ALL 30 FERALS =====
+const FERALS_DATA = {
+  // COMMONS
+  sylvix: { id:'sylvix', name:'Sylvix', sprite:'sylvix', rarity:'common', baseStats:{hp:60,atk:14,def:10,spd:18}, ability:{name:'Pilferer',desc:'Chance to steal enemy held item at battle start'}, basicAttack:'Ghost Nip', specialAttack:'Will-o-Swipe' },
+  lunnis: { id:'lunnis', name:'Lunnis', sprite:'lunnis', rarity:'common', baseStats:{hp:65,atk:12,def:12,spd:16}, ability:{name:'Moonblessed',desc:'+25% all stats during nighttime battles'}, basicAttack:'Lunar Kick', specialAttack:'Moonbeam' },
+  grubbin: { id:'grubbin', name:'Grubbin', sprite:'grubbin', rarity:'common', baseStats:{hp:58,atk:10,def:14,spd:10}, ability:{name:'Sporecloud',desc:'Chance to confuse enemy on taking damage'}, basicAttack:'Needle Roll', specialAttack:'Spore Burst' },
+  flicket: { id:'flicket', name:'Flicket', sprite:'flicket', rarity:'common', baseStats:{hp:55,atk:13,def:9,spd:17}, ability:{name:'Glowbelly',desc:'Reduces enemy accuracy in dark environments'}, basicAttack:'Tongue Lash', specialAttack:'Lantern Burst' },
+  dustmaw: { id:'dustmaw', name:'Dustmaw', sprite:'dustmaw', rarity:'common', baseStats:{hp:62,atk:11,def:13,spd:14}, ability:{name:'Sandcloak',desc:'15% chance to dodge by blending into terrain'}, basicAttack:'Sand Bite', specialAttack:'Dust Storm' },
+  pebblox: { id:'pebblox', name:'Pebblox', sprite:'pebblox', rarity:'common', baseStats:{hp:70,atk:9,def:18,spd:7}, ability:{name:'Rollguard',desc:'Takes half damage when HP drops below 30%'}, basicAttack:'Pebble Toss', specialAttack:'Boulder Roll' },
+  wisprat: { id:'wisprat', name:'Wisprat', sprite:'wisprat', rarity:'common', baseStats:{hp:52,atk:15,def:7,spd:19}, ability:{name:'Tailflame',desc:'20% chance to burn enemy on contact'}, basicAttack:'Scorch Bite', specialAttack:'Wax Splash' },
+  cluckle: { id:'cluckle', name:'Cluckle', sprite:'cluckle', rarity:'common', baseStats:{hp:57,atk:12,def:10,spd:15}, ability:{name:'Static Feathers',desc:'25% chance to paralyze attacker on contact'}, basicAttack:'Thunder Peck', specialAttack:'Zap Cluck' },
+  mossfin: { id:'mossfin', name:'Mossfin', sprite:'mossfin', rarity:'common', baseStats:{hp:60,atk:11,def:12,spd:13}, ability:{name:'Overgrowth',desc:'Slowly regenerates HP each round'}, basicAttack:'Fin Slap', specialAttack:'Moss Wave' },
+  snarlpup: { id:'snarlpup', name:'Snarlpup', sprite:'snarlpup', rarity:'common', baseStats:{hp:63,atk:13,def:11,spd:16}, ability:{name:'Briar Coat',desc:'Thorns deal minor damage back to attacker'}, basicAttack:'Thorn Bite', specialAttack:'Bramble Rush' },
+  // UNCOMMONS
+  coralwing: { id:'coralwing', name:'Coralwing', sprite:'coralwing', rarity:'uncommon', baseStats:{hp:72,atk:18,def:14,spd:20}, ability:{name:'Venomshell',desc:'Poisons enemies that deal physical damage'}, basicAttack:'Reef Talon', specialAttack:'Coral Dive' },
+  thornback: { id:'thornback', name:'Thornback', sprite:'thornback', rarity:'uncommon', baseStats:{hp:90,atk:14,def:22,spd:8}, ability:{name:'Briarplate',desc:'Bleeds enemies that deal physical damage'}, basicAttack:'Thorn Bash', specialAttack:'Ancient Shell' },
+  cindermane: { id:'cindermane', name:'Cindermane', sprite:'cindermane', rarity:'uncommon', baseStats:{hp:78,atk:19,def:13,spd:21}, ability:{name:'Emberstride',desc:'Leaves burning ground dealing damage each round'}, basicAttack:'Hoof Crash', specialAttack:'Inferno Gallop' },
+  glowtail: { id:'glowtail', name:'Glowtail', sprite:'glowtail', rarity:'uncommon', baseStats:{hp:72,atk:15,def:17,spd:20}, ability:{name:'Auroraveil',desc:'25% chance to negate an attack completely'}, basicAttack:'Antler Strike', specialAttack:'Northern Lights' },
+  bogsnap: { id:'bogsnap', name:'Bogsnap', sprite:'bogsnap', rarity:'uncommon', baseStats:{hp:88,atk:18,def:20,spd:11}, ability:{name:'Vinelash',desc:'Slows enemy SPD by 20% on hit'}, basicAttack:'Swamp Bite', specialAttack:'Vine Crush' },
+  vexcrow: { id:'vexcrow', name:'Vexcrow', sprite:'vexcrow', rarity:'uncommon', baseStats:{hp:68,atk:20,def:12,spd:22}, ability:{name:'Stormcall',desc:'25% chance to strike enemy with lightning each round'}, basicAttack:'Thunder Peck', specialAttack:'Storm Dive' },
+  mirewing: { id:'mirewing', name:'Mirewing', sprite:'mirewing', rarity:'uncommon', baseStats:{hp:70,atk:16,def:19,spd:20}, ability:{name:'Reflection',desc:'30% chance to reflect damage back to attacker'}, basicAttack:'Wing Slash', specialAttack:'Mirror Shatter' },
+  embertoad: { id:'embertoad', name:'Embertoad', sprite:'embertoad', rarity:'uncommon', baseStats:{hp:85,atk:17,def:21,spd:10}, ability:{name:'Lavacoat',desc:'Attacker takes burn damage every time they hit Embertoad'}, basicAttack:'Magma Tongue', specialAttack:'Eruption Leap' },
+  // RARES
+  duskfang: { id:'duskfang', name:'Duskfang', sprite:'duskfang', rarity:'rare', baseStats:{hp:80,atk:22,def:14,spd:24}, ability:{name:'Shadowstep',desc:'20% passive dodge chance on every attack'}, basicAttack:'Shadow Bite', specialAttack:'Eclipse Fang' },
+  embrak: { id:'embrak', name:'Embrak', sprite:'embrak', rarity:'rare', baseStats:{hp:110,atk:20,def:28,spd:8}, ability:{name:'Ironhide',desc:'Reduces all damage taken by 5 flat'}, basicAttack:'Stone Slam', specialAttack:'Golem Crush' },
+  stonox: { id:'stonox', name:'Stonox', sprite:'stonox', rarity:'rare', baseStats:{hp:108,atk:20,def:30,spd:10}, ability:{name:'Permafrost',desc:'Enemy SPD reduced 15% permanently each hit'}, basicAttack:'Glacier Charge', specialAttack:'Avalanche' },
+  starclaw: { id:'starclaw', name:'Starclaw', sprite:'starclaw', rarity:'rare', baseStats:{hp:85,atk:26,def:16,spd:28}, ability:{name:'Celestial Map',desc:'Predicts attacks — 25% chance to evade completely'}, basicAttack:'Star Talon', specialAttack:'Constellation Strike' },
+  voidfin: { id:'voidfin', name:'Voidfin', sprite:'voidfin', rarity:'rare', baseStats:{hp:92,atk:28,def:15,spd:25}, ability:{name:'Dark Current',desc:'Reduces enemy DEF by 20% each round'}, basicAttack:'Void Bite', specialAttack:'Abyss Surge' },
+  pyremanx: { id:'pyremanx', name:'Pyremanx', sprite:'pyremanx', rarity:'rare', baseStats:{hp:82,atk:27,def:16,spd:26}, ability:{name:'Scorchstep',desc:'Leaves fire on dodge — burns any advancing enemy'}, basicAttack:'Ember Paw', specialAttack:'Pyre Surge' },
+  abysselk: { id:'abysselk', name:'Abysselk', sprite:'abysselk', rarity:'rare', baseStats:{hp:100,atk:22,def:24,spd:16}, ability:{name:'Bioluminance',desc:'Blinds enemy at battle start reducing ATK by 20%'}, basicAttack:'Depth Charge', specialAttack:'Abyss Antler' },
+  galehawk: { id:'galehawk', name:'Galehawk', sprite:'galehawk', rarity:'rare', baseStats:{hp:80,atk:25,def:15,spd:30}, ability:{name:'Cyclone Shield',desc:'Surrounding winds deflect 20% of all incoming damage'}, basicAttack:'Gale Talon', specialAttack:'Tornado Dive' },
+  // EPICS
+  nebulodon: { id:'nebulodon', name:'Nebulodon', sprite:'nebulodon', rarity:'epic', baseStats:{hp:120,atk:28,def:30,spd:18}, ability:{name:'Cosmic Crush',desc:'Every 3rd attack deals double damage'}, basicAttack:'Nebula Stomp', specialAttack:'Supernova Charge' },
+  riftserpent: { id:'riftserpent', name:'Riftserpent', sprite:'riftserpent', rarity:'epic', baseStats:{hp:105,atk:33,def:20,spd:28}, ability:{name:'Dimensional Slip',desc:'35% chance to phase out avoiding any attack'}, basicAttack:'Rift Fang', specialAttack:'Reality Shatter' },
+  ashenwing: { id:'ashenwing', name:'Ashenwing', sprite:'ashenwing', rarity:'epic', baseStats:{hp:115,atk:30,def:26,spd:24}, ability:{name:'Rebirth',desc:'Once per battle survives a killing blow with 15% HP'}, basicAttack:'Ash Claw', specialAttack:'Cinder Storm' },
+  hexcoon: { id:'hexcoon', name:'Hexcoon', sprite:'hexcoon', rarity:'epic', baseStats:{hp:100,atk:32,def:22,spd:28}, ability:{name:'Overclock',desc:'+25% ATK and SPD but takes 5 recoil damage per round'}, basicAttack:'Junk Blast', specialAttack:'Rocket Barrage' },
+  // LEGENDARIES
+  tempus: { id:'tempus', name:'Tempus', sprite:'tempus', rarity:'legendary', baseStats:{hp:95,atk:28,def:20,spd:35}, ability:{name:'Timestep',desc:'Occasionally acts twice in one round'}, basicAttack:'Claw Scratch', specialAttack:'Temporal Rend' },
+  detonax: { id:'detonax', name:'Detonax', sprite:'detonax', rarity:'legendary', baseStats:{hp:130,atk:38,def:32,spd:18}, ability:{name:'Bomb Claws',desc:'40% chance special attack causes massive explosion at 150% damage'}, basicAttack:'Claw Slam', specialAttack:'Detonation Strike' },
+  tyranus: { id:'tyranus', name:'Tyranus', sprite:'tyranus', rarity:'legendary', baseStats:{hp:125,atk:40,def:28,spd:22}, ability:{name:'Supernova',desc:'Below 25% HP explodes dealing massive damage and +30% ATK'}, basicAttack:'Extinction Bite', specialAttack:'Supernova Blast' },
+};
 
 // ===== FERAL FLAVOR TEXT =====
 const FERAL_LORE = {
@@ -563,9 +632,57 @@ const CATCH_FLAVOR = {
 
 function randomFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
-let ITEMS_DATA = {trinkets:[],essences:[],healing:[],stones:[]};
+// ===== ITEMS =====
+const ITEMS_DATA = {
+  trinkets: [
+    { id:'old_socks', name:'Old Socks', icon:'🧦', rarity:'common', type:'trinket', effect:{def:1}, price:20, desc:'+1 DEF (better than nothing!)' },
+    { id:'bent_coin', name:'Bent Coin', icon:'🪙', rarity:'common', type:'trinket', effect:{atk:1}, price:20, desc:'+1 ATK' },
+    { id:'crow_feather', name:'Crow Feather', icon:'🪶', rarity:'common', type:'trinket', effect:{spd:1}, price:20, desc:'+1 SPD' },
+    { id:'cracked_amulet', name:'Cracked Amulet', icon:'📿', rarity:'uncommon', type:'trinket', effect:{def:3}, price:60, desc:'+3 DEF' },
+    { id:'wolf_tooth', name:'Wolf Tooth Necklace', icon:'🦷', rarity:'uncommon', type:'trinket', effect:{atk:3}, price:60, desc:'+3 ATK' },
+    { id:'tattered_scarf', name:'Tattered Scarf', icon:'🧣', rarity:'uncommon', type:'trinket', effect:{hp:5}, price:60, desc:'+5 HP' },
+    { id:'lucky_mushroom', name:'Lucky Mushroom', icon:'🍄', rarity:'uncommon', type:'trinket', effect:{hp:4,spd:2}, price:70, desc:'+4 HP +2 SPD' },
+    { id:'bone_ring', name:'Bone Ring', icon:'💀', rarity:'uncommon', type:'trinket', effect:{atk:2,def:2}, price:75, desc:'+2 ATK +2 DEF' },
+    { id:'glowstone', name:'Glowstone Pendant', icon:'💠', rarity:'rare', type:'trinket', effect:{def:5,hp:5}, price:150, desc:'+5 DEF +5 HP' },
+    { id:'fang_guard', name:'Fang Guard', icon:'⚔️', rarity:'rare', type:'trinket', effect:{atk:5}, price:150, desc:'+5 ATK' },
+    { id:'frozen_tear', name:'Frozen Tear', icon:'🧊', rarity:'rare', type:'trinket', effect:{def:4,spd:3}, price:160, desc:'+4 DEF +3 SPD' },
+    { id:'stormband', name:'Stormband', icon:'⚡', rarity:'epic', type:'trinket', effect:{spd:8,atk:5}, price:300, desc:'+8 SPD +5 ATK' },
+    { id:'void_shard', name:'Void Shard', icon:'🌑', rarity:'epic', type:'trinket', effect:{atk:7,def:4}, price:320, desc:'+7 ATK +4 DEF' },
+    { id:'hollow_crown', name:'Hollow Crown', icon:'👑', rarity:'legendary', type:'trinket', effect:{atk:10,def:10,spd:10,hp:10}, price:800, desc:'+10 ALL STATS' },
+  ],
+  essences: [
+    { id:'murky', name:'Murky Essence', icon:'🌑', rarity:'common', type:'essence', boost:{atk:4}, decline:{spd:3}, price:40, desc:'+ATK / -SPD' },
+    { id:'pale', name:'Pale Essence', icon:'🌫️', rarity:'common', type:'essence', boost:{def:4}, decline:{atk:3}, price:40, desc:'+DEF / -ATK' },
+    { id:'rushing', name:'Rushing Essence', icon:'💨', rarity:'common', type:'essence', boost:{spd:5}, decline:{def:3}, price:40, desc:'+SPD / -DEF' },
+    { id:'bulky', name:'Bulky Essence', icon:'🌿', rarity:'uncommon', type:'essence', boost:{hp:10}, decline:{spd:4}, price:80, desc:'+HP / -SPD' },
+    { id:'sharp', name:'Sharp Essence', icon:'🔪', rarity:'uncommon', type:'essence', boost:{atk:6}, decline:{hp:8}, price:80, desc:'+ATK / -HP' },
+    { id:'ghostly', name:'Ghostly Essence', icon:'👻', rarity:'rare', type:'essence', boost:{spd:8}, decline:{atk:5}, price:160, desc:'+SPD / -ATK' },
+    { id:'ancient', name:'Ancient Essence', icon:'🗿', rarity:'rare', type:'essence', boost:{def:8,hp:5}, decline:{spd:6}, price:180, desc:'+DEF +HP / -SPD' },
+    { id:'volatile', name:'Volatile Essence', icon:'💥', rarity:'epic', type:'essence', boost:{atk:12}, decline:{def:8,hp:10}, price:280, desc:'+ATK / -DEF -HP (high risk!)' },
+  ],
+  healing: [
+    { id:'wild_herb', name:'Wild Herb', icon:'🌿', rarity:'common', type:'healing', healAmount:15, healAll:false, price:5, desc:'Restores 15 HP to one Feral' },
+    { id:'tonic', name:'Tonic', icon:'🧪', rarity:'uncommon', type:'healing', healAmount:35, healAll:false, price:10, desc:'Restores 35 HP to one Feral' },
+    { id:'elixir', name:'Elixir', icon:'⚗️', rarity:'rare', type:'healing', healAmount:999, healAll:false, price:30, desc:'Fully restores HP to one Feral' },
+    { id:'hearty_meal', name:'Hearty Meal', icon:'🍖', rarity:'uncommon', type:'healing', healAmount:20, healAll:true, price:40, desc:'Restores 20 HP to ALL your Ferals' },
+    { id:'soul_ember', name:'Soul Ember', icon:'🕯️', rarity:'epic', type:'revival', price:75, desc:'Revives a fallen Feral with 25% HP' },
+  ],
+  stones: [
+    { id:'emberstone', name:'Emberstone', icon:'🔥', rarity:'uncommon', type:'stone', effect:'burn', price:80, desc:'Adds burn chance on hit' },
+    { id:'shockstone', name:'Shockstone', icon:'⚡', rarity:'uncommon', type:'stone', effect:'paralyze', price:80, desc:'Adds paralyze chance on hit' },
+    { id:'shadowstone', name:'Shadowstone', icon:'🌑', rarity:'rare', type:'stone', effect:'special', price:150, desc:'Physical → Special attack' },
+    { id:'bloodstone', name:'Bloodstone', icon:'🩸', rarity:'rare', type:'stone', effect:'lifesteal', price:150, desc:'Heal 20% of damage dealt' },
+    { id:'glassstone', name:'Glassstone', icon:'💎', rarity:'rare', type:'stone', effect:'recoil', price:150, desc:'+50% damage but take recoil' },
+    { id:'luckstone', name:'Luckstone', icon:'🍀', rarity:'uncommon', type:'stone', effect:'luck', price:80, desc:'Random bonus effect each battle' },
+    { id:'choicestone', name:'Choicestone', icon:'⚖️', rarity:'rare', type:'stone', effect:'choice', price:150, desc:'+30% damage, locked attack style' },
+    { id:'mirrorstone', name:'Mirrorstone', icon:'🪞', rarity:'rare', type:'stone', effect:'reflect', price:150, desc:'Reflects 15% damage back' },
+    { id:'froststone', name:'Froststone', icon:'❄️', rarity:'rare', type:'stone', effect:'freeze', price:160, desc:'15% chance to freeze enemy for 1 round' },
+    { id:'voidstone', name:'Voidstone', icon:'🕳️', rarity:'epic', type:'stone', effect:'void', price:300, desc:'Ignores 30% of enemy DEF' },
+    { id:'twinstone', name:'Twinstone', icon:'✌️', rarity:'epic', type:'stone', effect:'double', price:320, desc:'10% chance to attack twice in one round' },
+  ]
+};
 
-let FORAGE_MATERIALS = [
+const FORAGE_MATERIALS = [
   { id:'wild_herb_mat', name:'Wild Herb', icon:'🌿', rarity:'common', type:'material', minLevel:1, desc:'A common healing herb' },
   { id:'glowshroom', name:'Glowshroom', icon:'🍄', rarity:'common', type:'material', minLevel:1, desc:'A softly glowing mushroom' },
   { id:'river_moss', name:'River Moss', icon:'🟢', rarity:'common', type:'material', minLevel:1, desc:'Damp moss from a riverbank' },
@@ -577,7 +694,7 @@ let FORAGE_MATERIALS = [
   { id:'starstone', name:'Starstone', icon:'⭐', rarity:'rare', type:'material', minLevel:7, desc:'A fragment of fallen star' },
   { id:'dragonscale_shard', name:'Dragon Scale Shard', icon:'💠', rarity:'rare', type:'material', minLevel:8, desc:'A shard of ancient dragon scale' },
 ];
-let HERBLORE_RECIPES = [
+const HERBLORE_RECIPES = [
   { id:'minor_potion', name:'Minor Potion', icon:'🧪', result:'wild_herb', ingredients:['wild_herb_mat','river_moss'], minLevel:1, desc:'Restores 15 HP' },
   { id:'glow_tonic', name:'Glow Tonic', icon:'💚', result:'tonic', ingredients:['glowshroom','moonroot'], minLevel:3, desc:'Restores 35 HP' },
   { id:'ember_elixir', name:'Ember Elixir', icon:'🔥', result:'elixir', ingredients:['embercrystal','ironpetal','moonroot'], minLevel:5, desc:'Fully restores HP' },
@@ -1019,7 +1136,7 @@ function feralCardHTML(feral, clickable=true) {
   return `
     <div class="card" ${clickable?`onclick="openFeralDetail('${feral.id}')"`:''} style="cursor:${clickable?'pointer':'default'};margin-bottom:12px;">
       <div class="feral-card">
-        <div class="feral-sprite ${sc}">${feral.sprite}</div>
+        ${feralSpriteHTML(feral.feralId||feral.id,feral.shiny||'none','40px')}
         <div class="feral-info">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div class="feral-name">${feral.name}</div>
@@ -1107,7 +1224,7 @@ function feralGridCard(f, idx) {
     ondragend="onDragEnd(event)">
     ${shinyIcon?`<span class="fgc-shiny-badge">${shinyIcon}</span>`:''}
     ${fallen?'<span class="fgc-fallen-badge">💀</span>':''}
-    <span class="fgc-sprite ${sc}" style="${fallen?'filter:grayscale(1);':''}">${f.sprite}</span>
+    <div style="${fallen?'opacity:0.5':''};">${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','32px')}</div>
     <div class="fgc-name">${f.name}</div>
     ${!fallen?`<div class="fgc-hp"><div class="fgc-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`:''}
     <span class="fgc-rarity" style="color:${rc};border-color:${rc};">${f.rarity.toUpperCase()}</span>
@@ -1196,7 +1313,7 @@ window.openFeralDetail = function(feralId) {
   const sc=shinyClass(feral.shiny||'none');
   openModal(`
     <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:56px;" class="${sc}">${feral.sprite}</div>
+      <div>${feralSpriteHTML(feral.feralId||feral.id,feral.shiny||'none','64px')}</div>
       <div class="modal-title">${feral.name} ${shinyBadgeHTML(feral.shiny||'none')}</div>
       <span class="rarity-badge ${getRarityClass(feral.rarity)}">${feral.rarity.toUpperCase()}</span>
     </div>
@@ -1467,14 +1584,14 @@ window.claimTrap = async function() {
   if(!tamed) {
     await savePlayerData(); renderTrap();
     const sc=shinyClass(shiny);
-    openModal(`<div class="modal-title">THE ONE THAT GOT AWAY</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;" class="${sc}">${caught.sprite}</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">A wild ${caught.name} appeared...<br>but broke free!</div>${shiny!=='none'?`<div style="color:var(--gold);margin-top:8px;">It was ${shiny==='both'?'ULTRA SHINY':'shiny'} too... 💔</div>`:''}</div>`);
+    openModal(`<div class="modal-title">THE ONE THAT GOT AWAY</div><div style="text-align:center;padding:20px 0;"><div>${feralSpriteHTML(caught.id,shiny,'56px')}</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">A wild ${caught.name} appeared...<br>but broke free!</div>${shiny!=='none'?`<div style="color:var(--gold);margin-top:8px;">It was ${shiny==='both'?'ULTRA SHINY':'shiny'} too... 💔</div>`:''}</div>`);
     return;
   }
 
   const alive=(playerData.ferals||[]).filter(f=>f.alive!==false);
   if(alive.length>=100) {
     await savePlayerData(); renderTrap();
-    openModal(`<div class="modal-title">ROSTER FULL!</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">${caught.sprite}</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">${caught.name} was caught but roster is full!<br>Release a Feral to make room.</div></div>`);
+    openModal(`<div class="modal-title">ROSTER FULL!</div><div style="text-align:center;padding:20px 0;"><div>${feralSpriteHTML(caught.id,'none','56px')}</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">${caught.name} was caught but roster is full!<br>Release a Feral to make room.</div></div>`);
     return;
   }
 
@@ -1490,7 +1607,7 @@ window.claimTrap = async function() {
   openModal(`
     <div class="modal-title">${shiny==='both'?'🌟 ULTRA SHINY CATCH!!!':shiny!=='none'?'✨ SHINY CATCH!':'FERAL CAUGHT!'}</div>
     <div style="text-align:center;padding:16px 0;">
-      <div style="font-size:64px;" class="${sc}">${newFeral.sprite}</div>
+      <div>${feralSpriteHTML(newFeral.feralId,newFeral.shiny||'none','72px')}</div>
       <div style="font-size:24px;color:var(--accent2);margin:12px 0;">${newFeral.name} ${shinyBadgeHTML(shiny)}</div>
       <span class="rarity-badge ${getRarityClass(newFeral.rarity)}">${newFeral.rarity.toUpperCase()}</span>
       <div style="font-size:16px;color:var(--gold);margin-top:8px;font-style:italic;">"${catchFlavor}"</div>
@@ -1641,7 +1758,8 @@ window.startBattle = function(feralId, isDungeon, enemyOverride) {
   updateBattleUI();
   document.getElementById('battleLog').innerHTML='';
   addLog(`⚔️ A wild ${enemy.name} appears!`,'log-info');
-  if(enemyShiny!=='none') addLog(`${enemyShiny==='both'?'🌟 ULTRA SHINY':'✨ Shiny'} ${enemy.name}!`,'log-ability');
+const enemyShiny = enemy.shiny || 'none';
+if(enemyShiny!=='none') addLog(`${enemyShiny==='both'?'🌟 ULTRA SHINY':'✨ Shiny'} ${enemy.name}!`,'log-ability');
   if(night&&feral.feralId==='lunnis') addLog('🌙 Moonblessed activated!','log-ability');
   if(feral.feralId==='sylvix'&&Math.random()<0.4) { enemy.atk=Math.max(1,enemy.atk-3); addLog(`🦊 Pilferer! Sylvix steals enemy focus!`,'log-ability'); }
 
@@ -1661,89 +1779,48 @@ function updateBattleUI() {
   const eHpPct=Math.max(0,Math.round((enemy.hp/enemy.maxHp)*100));
   document.getElementById('playerSprite').innerHTML=feralSpriteHTML(player.feral.feralId||player.feral.id,player.feral.shiny||'none','48px');
   document.getElementById('playerFighterName').textContent=player.feral.name;
-  document.getElementById('playerHPText').textContent=`${Math.max(0,player.hp)}/${player.maxHp}`;
+  document.getElementById('playerHPText').textContent=`${Math.max(0,Math.round(player.hp))}/${player.maxHp}`;
   document.getElementById('playerHPBar').style.width=pHpPct+'%';
   document.getElementById('playerHPBar').style.background=pHpPct>50?'var(--green)':pHpPct>25?'var(--gold)':'var(--red)';
   document.getElementById('playerSPText').textContent=`${Math.round(player.sp)}/100`;
   document.getElementById('playerSPBar').style.width=Math.min(100,player.sp)+'%';
   document.getElementById('enemySprite').innerHTML=feralSpriteHTML(enemy.feralId||enemy.sprite,enemy.shiny||'none','48px');
   document.getElementById('enemyFighterName').textContent=enemy.name;
-  document.getElementById('enemyHPText').textContent=`${Math.max(0,enemy.hp)}/${enemy.maxHp}`;
+  document.getElementById('enemyHPText').textContent=`${Math.max(0,Math.round(enemy.hp))}/${enemy.maxHp}`;
   document.getElementById('enemyHPBar').style.width=eHpPct+'%';
   document.getElementById('enemySPBar').style.width=Math.min(100,enemy.sp)+'%';
 }
 
-// SPD formula: interval in ms = 10000/spd
-// SPD 10 = 1000ms, SPD 20 = 500ms, SPD 30 = 333ms
-// Clamped: min 200ms (SPD 50+), max 2000ms (SPD 5)
-function spdToInterval(spd) {
-  return Math.max(200, Math.min(2000, Math.round(10000 / Math.max(1, spd))));
+function runBattleTick() { if(battleInterval) clearInterval(battleInterval); battleInterval=setInterval(doBattleTick,1200); }
+
+function doBattleTick() {
+  if(!battleState||battleState.finished) return;
+  const {player,enemy}=battleState;
+  const playerFirst=player.spd>=enemy.spd||Math.random()<(player.spd/(player.spd+enemy.spd));
+  if(playerFirst) { playerAttacks(); if(!battleState.finished) enemyAttacks(); }
+  else { enemyAttacks(); if(!battleState.finished) playerAttacks(); }
+
+  // Tempus double action
+  if(player.feral.feralId==='tempus'&&Math.random()<0.25&&!battleState.finished) { addLog('⏰ Timestep! Tempus acts again!','log-ability'); playerAttacks(); }
+  if(enemy.feralId==='tempus'&&Math.random()<0.25&&!battleState.finished) { addLog('⏰ Timestep! Enemy Tempus acts again!','log-ability'); enemyAttacks(); }
+
+  // Status damage
+  if(player.poisoned&&!battleState.finished){player.hp-=3;addLog(`☠️ ${player.feral.name} is poisoned! -3HP`,'log-hit');}
+  if(player.bleeding&&!battleState.finished){player.hp-=4;addLog(`🩸 ${player.feral.name} bleeds! -4HP`,'log-hit');}
+  if(player.burned&&!battleState.finished){player.hp-=2;addLog(`🔥 ${player.feral.name} burns! -2HP`,'log-hit');}
+  if(enemy.poisoned&&!battleState.finished){enemy.hp-=3;addLog(`☠️ ${enemy.name} is poisoned! -3HP`,'log-hit');}
+  if(enemy.bleeding&&!battleState.finished){enemy.hp-=4;addLog(`🩸 ${enemy.name} bleeds! -4HP`,'log-hit');}
+  if(enemy.burned&&!battleState.finished){enemy.hp-=2;addLog(`🔥 ${enemy.name} burns! -2HP`,'log-hit');}
+  // Cindermane/Emberstride
+  if(player.feral.feralId==='cindermane'&&!battleState.finished){enemy.hp-=2;addLog('🔥 Emberstride burns the ground! -2HP','log-ability');}
+  // Mossfin regen
+  if(player.feral.feralId==='mossfin'&&!battleState.finished){player.hp=Math.min(player.maxHp,player.hp+2);addLog('🌿 Overgrowth! +2HP','log-ability');}
+  // Hexcoon recoil
+  if(player.hexcoonRecoil&&!battleState.finished){player.hp-=5;addLog('⚙️ Overclock recoil! -5HP','log-hit');}
+
+  updateBattleUI();
+  if(player.hp<=0||enemy.hp<=0){ clearInterval(battleInterval); battleState.finished=true; setTimeout(finishBattle,800); }
 }
-
-let playerBattleInterval = null;
-let enemyBattleInterval = null;
-let statusInterval = null;
-
-function runBattleTick() {
-  // Clear any existing intervals
-  if(battleInterval) clearInterval(battleInterval);
-  if(playerBattleInterval) clearInterval(playerBattleInterval);
-  if(enemyBattleInterval) clearInterval(enemyBattleInterval);
-  if(statusInterval) clearInterval(statusInterval);
-
-  const {player, enemy} = battleState;
-  const playerMs = spdToInterval(player.spd);
-  const enemyMs = spdToInterval(enemy.spd);
-
-  addLog(`⚡ ${player.feral.name} SPD:${player.spd} (${(1000/playerMs).toFixed(1)}/s) vs ${enemy.name} SPD:${enemy.spd} (${(1000/enemyMs).toFixed(1)}/s)`, 'log-info');
-
-  // Each fighter attacks on their own timer
-  playerBattleInterval = setInterval(() => {
-    if(!battleState || battleState.finished) { clearInterval(playerBattleInterval); return; }
-    playerAttacks();
-    updateBattleUI();
-    if(battleState.player.hp <= 0 || battleState.enemy.hp <= 0) endCombat();
-  }, playerMs);
-
-  enemyBattleInterval = setInterval(() => {
-    if(!battleState || battleState.finished) { clearInterval(enemyBattleInterval); return; }
-    enemyAttacks();
-    updateBattleUI();
-    if(battleState.player.hp <= 0 || battleState.enemy.hp <= 0) endCombat();
-  }, enemyMs);
-
-  // Status effects + per-round abilities tick every 2 seconds
-  statusInterval = setInterval(() => {
-    if(!battleState || battleState.finished) { clearInterval(statusInterval); return; }
-    const {player, enemy} = battleState;
-    if(player.poisoned){player.hp-=3;addLog(`☠️ ${player.feral.name} poisoned! -3HP`,'log-hit');}
-    if(player.bleeding){player.hp-=4;addLog(`🩸 ${player.feral.name} bleeds! -4HP`,'log-hit');}
-    if(player.burned){player.hp-=2;addLog(`🔥 ${player.feral.name} burns! -2HP`,'log-hit');}
-    if(enemy.poisoned){enemy.hp-=3;addLog(`☠️ ${enemy.name} poisoned! -3HP`,'log-hit');}
-    if(enemy.bleeding){enemy.hp-=4;addLog(`🩸 ${enemy.name} bleeds! -4HP`,'log-hit');}
-    if(enemy.burned){enemy.hp-=2;addLog(`🔥 ${enemy.name} burns! -2HP`,'log-hit');}
-    if(player.feral.feralId==='cindermane'){enemy.hp-=2;addLog('🔥 Emberstride! -2HP','log-ability');}
-    if(player.feral.feralId==='mossfin'){player.hp=Math.min(player.maxHp,player.hp+2);addLog('🌿 Overgrowth! +2HP','log-ability');}
-    if(player.hexcoonRecoil){player.hp-=5;addLog('⚙️ Overclock recoil! -5HP','log-hit');}
-    // Tempus double action
-    if(player.feral.feralId==='tempus'&&Math.random()<0.25){addLog('⏰ Timestep! Tempus acts again!','log-ability');playerAttacks();}
-    if(enemy.feralId==='tempus'&&Math.random()<0.25){addLog('⏰ Timestep! Enemy Tempus acts again!','log-ability');enemyAttacks();}
-    updateBattleUI();
-    if(player.hp<=0||enemy.hp<=0) endCombat();
-  }, 2000);
-}
-
-function endCombat() {
-  if(!battleState || battleState.finished) return;
-  battleState.finished = true;
-  clearInterval(playerBattleInterval);
-  clearInterval(enemyBattleInterval);
-  clearInterval(statusInterval);
-  clearInterval(battleInterval);
-  setTimeout(finishBattle, 800);
-}
-
-
 
 function playerAttacks() {
   const {player,enemy}=battleState;
@@ -1931,9 +2008,6 @@ window.attemptTame = async function() {
 window.fleeBattle = function() {
   if(!battleState || battleState.finished) return;
   clearInterval(battleInterval);
-  clearInterval(playerBattleInterval);
-  clearInterval(enemyBattleInterval);
-  clearInterval(statusInterval);
   battleState.finished = true;
   soundFlee();
   // Small shard penalty
@@ -2027,9 +2101,6 @@ window.doSwap = function(feralId) {
 
 window.endBattle = function() {
   if(battleInterval) clearInterval(battleInterval);
-  if(playerBattleInterval) clearInterval(playerBattleInterval);
-  if(enemyBattleInterval) clearInterval(enemyBattleInterval);
-  if(statusInterval) clearInterval(statusInterval);
   battleState=null; currentBattleEnemy=null;
   document.getElementById('battleControls').style.display='flex';
   document.getElementById('battleContent').style.display='block';
@@ -2199,7 +2270,7 @@ function showBracketResults(results,title,showOwner=false){
         <div class="bracket-fer ${m.winner.id===m.b.id?'bracket-winner':'bracket-loser'}">${m.b.sprite} ${m.b.name}${showOwner&&m.b.ownerName?` (${m.b.ownerName})`:''}</div>
       </div></div>`).join('')}`).join('')}
     <div style="text-align:center;padding:16px;background:var(--bg3);border:2px solid var(--gold);margin-top:12px;">
-      <div style="font-size:32px;" class="${shinyClass(results.champion.shiny||'none')}">${results.champion.sprite}</div>
+      <div>${feralSpriteHTML(results.champion.feralId||results.champion.id,results.champion.shiny||'none','40px')}</div>
       <div style="font-family:var(--pixel);font-size:10px;color:var(--gold);margin-top:8px;">🏆 CHAMPION</div>
       <div style="font-size:20px;">${results.champion.name}${showOwner&&results.champion.ownerName?` — ${results.champion.ownerName}`:''} ${shinyBadgeHTML(results.champion.shiny||'none')}</div>
     </div>`);
@@ -2230,7 +2301,7 @@ async function renderLeaderboard() {
     ${allFerals.length===0?'<div class="helper-text">No battle wins yet!</div>':allFerals.slice(0,5).map((f,i)=>`
       <div class="leaderboard-row">
         <div class="leaderboard-rank">${['🥇','🥈','🥉','4','5'][i]}</div>
-        <div style="font-size:28px;" class="${shinyClass(f.shiny||'none')}">${f.sprite}</div>
+        <div>${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','28px')}</div>
         <div class="leaderboard-info"><div style="font-family:var(--pixel);font-size:8px;">${f.name}</div><div style="color:var(--text2);font-size:15px;">${f.ownerName}'s ${f.rarity}</div></div>
         <div class="leaderboard-val">⚔️ ${f.wins||0}</div>
       </div>`).join('')}
@@ -2238,7 +2309,7 @@ async function renderLeaderboard() {
     ${killFerals.length===0?'<div class="helper-text">No kills yet!</div>':killFerals.slice(0,5).map((f,i)=>`
       <div class="leaderboard-row">
         <div class="leaderboard-rank">${['🥇','🥈','🥉','4','5'][i]}</div>
-        <div style="font-size:28px;" class="${shinyClass(f.shiny||'none')}">${f.sprite}</div>
+        <div>${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','28px')}</div>
         <div class="leaderboard-info"><div style="font-family:var(--pixel);font-size:8px;">${f.name}</div><div style="color:var(--text2);font-size:15px;">${f.ownerName}'s ${f.rarity}</div></div>
         <div class="leaderboard-val">💀 ${f.kills||0}</div>
       </div>`).join('')}
@@ -2275,22 +2346,28 @@ async function renderMarket() {
     (mine.length>0?'<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">YOUR LISTINGS</div>'+mine.map(l=>mktHTML(l,true)).join('')+
     '<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">MARKET</div>':'')+
     (others.length===0?'<div class="empty-state"><span class="empty-icon">🏪</span>No listings yet!</div>':others.map(l=>mktHTML(l,false)).join(''));
+  // Add delegated click listeners for market listings
+  content.addEventListener('click', function(e) {
+    const listing = e.target.closest('.market-listing');
+    if(!listing) return;
+    const id = listing.dataset.listingid;
+    const mine = listing.dataset.mine === '1';
+    if(mine) cancelListing(id);
+    else buyListing(id);
+  }, {once:true});
 }
 
 function mktHTML(l,mine) {
   const icon = l.type==='feral' ? feralSpriteHTML(l.itemId,'none','32px') : '<span style="font-size:28px;">'+(l.icon||'📦')+'</span>';
   const tax = Math.ceil(l.price*0.1);
-  const div = document.createElement('div');
-  div.className = 'market-listing';
-  div.dataset.type = l.type;
-  div.addEventListener('click', mine ? ()=>cancelListing(l.id) : ()=>buyListing(l.id));
-  div.innerHTML = icon +
+  // Use data attributes so clicks work after innerHTML insertion
+  return '<div class="market-listing" data-type="'+l.type+'" data-listingid="'+l.id+'" data-mine="'+(mine?'1':'0')+'" style="cursor:pointer;">'+
+    icon+
     '<div class="market-listing-info">'+
     '<div class="market-listing-name">'+l.name+'</div>'+
     '<div class="market-listing-sub">'+l.sellerName+' • '+l.rarity+(mine?' — tap to cancel':'')+' </div>'+
     (!mine?'<div style="color:var(--text2);font-size:13px;">Tax: '+tax+' 💎 → Seller gets '+(l.price-tax)+' 💎</div>':'')+
-    '</div><div class="market-listing-price">💎 '+l.price+'</div>';
-  return div.outerHTML;
+    '</div><div class="market-listing-price">💎 '+l.price+'</div></div>';
 }
 
 window.filterMarket=function(type,btn){
@@ -2562,39 +2639,7 @@ function renderTamer(){
 }
 
 // ===== INIT =====
-async function loadGameData() {
-  try {
-    const [feralsRes, itemsRes] = await Promise.all([
-      fetch('ferals.json'),
-      fetch('items.json')
-    ]);
-    const feralsArr = await feralsRes.json();
-    const itemsData = await itemsRes.json();
-
-    // ferals.json is an array - convert to object keyed by id
-    FERALS_DATA = {};
-    feralsArr.forEach(f => { FERALS_DATA[f.id] = f; });
-
-    // items.json has { trinkets, essences, healing, stones }
-    ITEMS_DATA = itemsData;
-
-    // If json has forage/herblore data use it, else keep defaults
-    if(itemsData.forageMaterials) FORAGE_MATERIALS = itemsData.forageMaterials;
-    if(itemsData.herbloreRecipes) HERBLORE_RECIPES = itemsData.herbloreRecipes;
-
-    console.log('Game data loaded: '+Object.keys(FERALS_DATA).length+' ferals, '+
-      (ITEMS_DATA.trinkets?.length||0)+' trinkets');
-  } catch(e) {
-    console.error('Failed to load JSON, using fallback:', e);
-    // Fallback - reload page or show error
-    document.body.innerHTML = '<div style="color:white;text-align:center;padding:40px;font-family:monospace;">'+
-      '<h2>Failed to load game data</h2><p>Make sure ferals.json and items.json are in the same folder as index.html</p>'+
-      '<button onclick="location.reload()" style="margin-top:20px;padding:12px 24px;font-size:16px;">Retry</button></div>';
-    throw e;
-  }
-}
-
-loadGameData().then(() => renderLogin());
+renderLogin();
 window.showScreen=showScreen;
 window.closeModal=closeModal;
 window.switchTab=switchTab;
