@@ -1937,6 +1937,12 @@ window.attemptTame = async function() {
     newFeral.currentHp=Math.max(1,Math.round(newFeral.stats.hp*0.3));
     playerData.ferals=[...(playerData.ferals||[]),newFeral];
     playerData.totalCaught=(playerData.totalCaught||0)+1;
+    playerData.dexSeen = playerData.dexSeen || {};
+playerData.dexSeen[newFeral.feralId] = playerData.dexSeen[newFeral.feralId] || { total:0, glow:false, invert:false, ultra:false };
+playerData.dexSeen[newFeral.feralId].total++;
+if(newFeral.shiny==='glow')   playerData.dexSeen[newFeral.feralId].glow  = true;
+if(newFeral.shiny==='invert') playerData.dexSeen[newFeral.feralId].invert = true;
+if(newFeral.shiny==='both')   playerData.dexSeen[newFeral.feralId].ultra  = true;
     await savePlayerData(); renderRoster();
     soundTame();
     addLog(`🌿 TAMED! ${newFeral.name} joins your team!`,'log-tame');
