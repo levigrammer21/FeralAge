@@ -1603,6 +1603,19 @@ window.claimTrap = async function() {
 };
 
 // ===== BATTLE =====
+  function getRandomWildFeralKey() {
+  const roll = Math.random() * 100;
+  let rarity;
+
+  if (roll < 55) rarity = 'common';
+  else if (roll < 80) rarity = 'uncommon';
+  else if (roll < 93) rarity = 'rare';
+  else if (roll < 99) rarity = 'epic';
+  else rarity = 'legendary';
+
+  const pool = Object.values(FERALS_DATA).filter(f => f.rarity === rarity);
+  return pool[Math.floor(Math.random() * pool.length)].id;
+  }
 let selectedBattleFeral = null;
 let previewEnemy = null;
 
