@@ -2502,7 +2502,123 @@ function renderTamer(){
     '<div class="section-title" style="margin-top:16px;">🎨 COSMETICS</div>'+
     '<div style="text-align:center;padding:20px;color:var(--text2);font-size:16px;background:var(--bg3);border:1px solid var(--border);">Coming soon! Titles and badges.</div>';
 }
+// ===== FERAL DEX =====
+let dexFilter = 'all';
 
+window.setDexFilter = function(f) {
+  dexFilter = f;
+  document.querySelectorAll('[id^="dex-filter-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('dex-filter-' + f)?.classList.add('active');
+  renderDex();
+};
+
+function renderDex() {
+  const allFeralIds = Object.keys(FERALS_DATA);
+  const caught = playerData.ferals || [];
+
+  const dexMap = {};
+  caught.forEach(f => {
+    const fid = f.feralId || f.id;
+    if (!dexMap[fid]) dexMap[fid] = { total: 0, glow: false, invert: false, ultra: false, alive: 0, fallen: 0 };
+    dexMap[fid].total++;
+    if (f.alive !== false) dexMap[fid].alive++;
+    else dexMap[fid].fallen++;
+    if (f.shiny === 'glow')   dexMap[fid].glow  = true;
+    if (f.shiny === 'invert') dexMap[fid].invert = true;
+    if (f.shiny === 'both')   dexMap[fid].ultra  = true;
+  });
+
+  const seenCount = Object.keys(dexMap).length;
+  const total = allFeralIds.length;
+  document.getElementById('dexCount').textContent = `(${seenCount}/${total} seen)`;
+
+  const rarityOrder = { common:0, uncommon:1, rare:2, epic:3, legendary:4 };
+  let ids = [...allFeralIds].sort((a, b) => {
+    const rd = (rarityOrder[FERALS_DATA[a].rarity] || 0) - (rarityOrder[FERALS_DATA[b].rarity] || 0);
+    return rd !== 0 ? rd : FERALS_DATA[a].name.localeCompare(FERALS_DATA[b].name);
+  });
+
+  if (dexFilter === 'caught')  ids = ids.filter(id => dexMap[id]);
+  if (dexFilter === 'unseen')  ids = ids.filter(id => !dexMap[id]);
+
+  const grid = document.getElementById('dexGrid');
+  if (ids.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📖</span>Nothing here yet!</div>';
+    return;
+  }
+
+  const rarityColors = { common:'#94a3b8', uncommon:'#22c55e', rare:'#3b82f6', epic:'#a855f7', legendary:'#f59e0b' };
+
+  grid.innerHTML = ids.map(fid => {
+    const base = FERALS_DATA[fid];
+    const d = dexMap[fid];
+    const seen = !!d;
+    const rc = rarityColors[base.rarity] || '#94a3b8';
+
+    const shinyPips = seen ? [
+      d.glow   ? `<span class="dex-shiny-pip" style="color:var(--gold);border-color:var(--gold);">✨GLW</span>` : '',
+      d.invert ? `<span class="dex-shiny-pip" style="color:var(--accent2);border-color:var(--accent2);">🔄INV</span>` : '',
+      d.ultra  ? `<span class="dex-shiny-pip" style="color:white;border-color:white;background:linear-gradient(90deg,gold,#c084fc);">🌟ULT</span>` : '',
+    ].filter(Boolean).join('') : '';
+
+    return `
+      <div class="dex-card ${seen ? 'dex-seen' : 'dex-unseen'}" onclick="${seen ? `openFeralDexEntry('${fid}')` : ''}">
+        ${d && d.total > 1 ? `<div class="dex-count-badge">x${d.total}</div>` : ''}
+        <div>${feralSpriteHTML(fid, 'none', '32px')}</div>
+        <div class="fgc-name">${seen ? base.name : '???'}</div>
+        <span class="fgc-rarity" style="color:${rc};border-color:${rc};">${base.rarity.toUpperCase()}</span>
+        ${shinyPips ? `<div class="dex-shiny-row">${shinyPips}</div>` : ''}
+        ${!seen ? '' : `<div style="font-size:12px;color:var(--text2);margin-top:3px;">⚔️${d.alive} 💀${d.fallen}</div>`}
+      </div>`;
+  }).join('');
+}
+
+window.openFeralDexEntry = function(fid) {
+  const base = FERALS_DATA[fid];
+  const caught = (playerData.ferals || []).filter(f => (f.feralId || f.id) === fid);
+  const glow   = caught.filter(f => f.shiny === 'glow').length;
+  const invert = caught.filter(f => f.shiny === 'invert').length;
+  const ultra  = caught.filter(f => f.shiny === 'both').length;
+  const alive  = caught.filter(f => f.alive !== false).length;
+  const fallen = caught.filter(f => f.alive === false).length;
+  const best   = caught.filter(f => f.alive !== false).sort((a,b) => (b.wins||0)-(a.wins||0))[0];
+
+  openModal(`
+    <div style="text-align:center;margin-bottom:16px;">
+      <div>${feralSpriteHTML(fid,'none','64px')}</div>
+      <div class="modal-title">${base.name}</div>
+      <span class="rarity-badge ${getRarityClass(base.rarity)}">${base.rarity.toUpperCase()}</span>
+    </div>
+    <div style="font-style:italic;color:var(--text2);font-size:16px;padding:10px;background:var(--bg3);border:1px solid var(--border);margin-bottom:12px;">
+      "${FERAL_LORE[fid] || 'No data recorded.'}"
+    </div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">BASE STATS</div>
+    <div class="stats-grid" style="margin-bottom:12px;">
+      <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val">${base.baseStats.hp}</div></div>
+      <div class="stat-box"><div class="stat-label">ATK</div><div class="stat-val">${base.baseStats.atk}</div></div>
+      <div class="stat-box"><div class="stat-label">DEF</div><div class="stat-val">${base.baseStats.def}</div></div>
+      <div class="stat-box"><div class="stat-label">SPD</div><div class="stat-val">${base.baseStats.spd}</div></div>
+    </div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">ABILITY</div>
+    <div style="margin-bottom:12px;"><span class="ability-tag">⚡ ${base.ability?.name}: ${base.ability?.desc}</span></div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">YOUR RECORDS</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div class="stat-box" style="flex:1;"><div class="stat-label">Caught</div><div class="stat-val">${caught.length}</div></div>
+      <div class="stat-box" style="flex:1;"><div class="stat-label">Alive</div><div class="stat-val" style="color:var(--green);">${alive}</div></div>
+      <div class="stat-box" style="flex:1;"><div class="stat-label">Fallen</div><div class="stat-val" style="color:var(--red);">${fallen}</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      ${glow   ? `<span class="shiny-badge shiny-badge-glow">✨ ${glow} SHINY</span>` : ''}
+      ${invert ? `<span class="shiny-badge shiny-badge-invert">🔄 ${invert} INVERTED</span>` : ''}
+      ${ultra  ? `<span class="shiny-badge shiny-badge-both">🌟 ${ultra} ULTRA</span>` : ''}
+      ${!glow && !invert && !ultra ? '<span style="color:var(--text2);font-size:15px;">No shinies caught yet.</span>' : ''}
+    </div>
+    ${best ? `<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">BEST FIGHTER</div>
+    <div style="background:var(--bg3);border:1px solid var(--border);padding:10px;font-size:16px;">
+      ${getFeralDisplayName(best)} — ⚔️ ${best.wins||0} wins | 💀 ${best.kills||0} kills
+    </div>` : ''}
+  `);
+};
 // ===== INIT =====
 renderLogin();
 window.showScreen=showScreen;
