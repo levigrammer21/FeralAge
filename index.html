@@ -1654,8 +1654,7 @@ function renderBattleSelect() {
 window.searchForBattle = function(feralId) {
   selectedBattleFeral=(playerData.ferals||[]).find(f=>f.id===feralId);
   if(!selectedBattleFeral) return;
-  const feralKeys=Object.keys(FERALS_DATA);
-  const enemyKey=feralKeys[Math.floor(Math.random()*feralKeys.length)];
+  const enemyKey = getRandomWildFeralKey();
   const enemyBase=FERALS_DATA[enemyKey];
   const enemyShiny=rollShiny();
   previewEnemy={
