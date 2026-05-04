@@ -2196,6 +2196,10 @@ if(player.feral.feralId==='thornwyrm'&&Math.random()<0.35){
   enemy.hp-=5;
   addLog(`🌿 Living Thorns stabbed the enemy! -5HP`,'log-ability');
 }
+  if(stone&&stone.effect==='berserk'&&battleState.player._berserkPenalty){ dmg=Math.round(dmg*1.1); }
+    if(stone&&stone.effect==='null'){ player.poisoned=false; player.bleeding=false; player.burned=false; player.paralyzed=false; }
+    if(stone&&stone.effect==='crown'){ dmg=Math.max(1,Math.round(dmg*0.85)); }
+    if(stone&&stone.effect==='iron'){ dmg=Math.max(1,dmg-3); }
   player.hp-=dmg;
   if(player.feral.feralId==='ashenwing'&&player.hp<=0&&!battleState.player.ashenwingRevived){ battleState.player.ashenwingRevived=true; player.hp=Math.round(player.maxHp*0.15); addLog(`🔥 Rebirth! Ashenwing survives!`,'log-ability'); }
   addLog(`${isSpecial?'✨':'🔴'} ${enemy.name} used ${isSpecial?enemy.specialAttack:enemy.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
