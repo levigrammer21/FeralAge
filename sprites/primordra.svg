@@ -1,0 +1,58 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes titan-shift {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+@keyframes earth-glow {
+  0%,100% { opacity:.4; }
+  50% { opacity:.9; }
+}
+@keyframes moss-sway {
+  0%,100% { opacity:.6; }
+  50% { opacity:1; }
+}
+</style>
+
+<!-- floating debris -->
+<rect x="2" y="4" width="1" height="1" fill="#a16207" style="animation:earth-glow 1.4s infinite"/>
+<rect x="13" y="5" width="1" height="1" fill="#65a30d" style="animation:earth-glow 1.7s infinite .3s"/>
+<rect x="11" y="12" width="1" height="1" fill="#84cc16" style="animation:earth-glow 2s infinite .5s"/>
+
+<g style="animation:titan-shift 2.2s ease-in-out infinite;">
+  <!-- massive body -->
+  <rect x="4" y="7" width="9" height="5" fill="#3f6212"/>
+  <rect x="5" y="6" width="7" height="2" fill="#4d7c0f"/>
+
+  <!-- terrain plates -->
+  <rect x="6" y="7" width="3" height="2" fill="#65a30d"/>
+  <rect x="9" y="8" width="2" height="2" fill="#84cc16"/>
+
+  <!-- moss patches -->
+  <rect x="5" y="7" width="1" height="2" fill="#22c55e" style="animation:moss-sway 1.5s infinite"/>
+  <rect x="8" y="6" width="2" height="1" fill="#16a34a" style="animation:moss-sway 1.8s infinite .3s"/>
+  <rect x="10" y="9" width="1" height="2" fill="#22c55e" style="animation:moss-sway 1.6s infinite .4s"/>
+
+  <!-- head -->
+  <rect x="3" y="5" width="5" height="4" fill="#365314"/>
+  <rect x="4" y="4" width="3" height="2" fill="#4d7c0f"/>
+
+  <!-- horn / rock crest -->
+  <rect x="4" y="3" width="2" height="1" fill="#a16207"/>
+  <rect x="5" y="2" width="1" height="1" fill="#ca8a04"/>
+
+  <!-- eye -->
+  <rect x="5" y="6" width="1" height="1" fill="#000"/>
+  <rect x="6" y="6" width="1" height="1" fill="#bbf7d0" style="animation:earth-glow 1s infinite"/>
+
+  <!-- legs -->
+  <rect x="5" y="12" width="2" height="2" fill="#3f6212"/>
+  <rect x="10" y="12" width="2" height="2" fill="#3f6212"/>
+
+  <!-- tail -->
+  <rect x="11" y="8" width="2" height="2" fill="#4d7c0f"/>
+</g>
+
+<!-- world aura -->
+<rect x="4" y="6" width="9" height="7" fill="#65a30d" opacity=".08" style="animation:earth-glow 2.5s infinite"/>
+</svg>
