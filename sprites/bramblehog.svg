@@ -1,0 +1,58 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes bounce {
+  0%,100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes flicker {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+@keyframes leaf-rustle {0%,100%{opacity:.45}50%{opacity:.9}}
+</style>
+
+<!-- drifting leaves -->
+<rect x="2" y="4" width="1" height="1" fill="#84cc16" opacity=".6" style="animation:leaf-rustle 1.4s infinite"/>
+<rect x="13" y="6" width="1" height="1" fill="#22c55e" opacity=".5" style="animation:leaf-rustle 1.8s infinite .3s"/>
+
+<!-- BODY -->
+<g style="animation:bounce 1.6s ease-in-out infinite; transform-origin:center;">
+
+  <!-- flicker layer -->
+  <g style="animation:flicker 2s ease-in-out infinite;">
+
+    <!-- bramble spikes -->
+    <rect x="5" y="5" width="1" height="2" fill="#365314"/>
+    <rect x="7" y="4" width="1" height="2" fill="#4d7c0f"/>
+    <rect x="9" y="5" width="1" height="2" fill="#365314"/>
+
+    <!-- body outline -->
+    <rect x="3" y="7" width="10" height="5" fill="#3f2a1d"/>
+    <rect x="4" y="6" width="8" height="2" fill="#3f2a1d"/>
+
+    <!-- body fill -->
+    <rect x="4" y="7" width="8" height="4" fill="#7c4a2d"/>
+    <rect x="5" y="6" width="6" height="2" fill="#9a5b34"/>
+
+    <!-- leaf bramble back -->
+    <rect x="5" y="6" width="2" height="1" fill="#65a30d"/>
+    <rect x="8" y="5" width="2" height="1" fill="#84cc16"/>
+    <rect x="10" y="6" width="2" height="1" fill="#65a30d"/>
+
+    <!-- head -->
+    <rect x="2" y="8" width="3" height="3" fill="#5b3822"/>
+    <rect x="1" y="9" width="2" height="1" fill="#3f2a1d"/>
+
+    <!-- tusk -->
+    <rect x="1" y="10" width="1" height="1" fill="#fef3c7"/>
+
+    <!-- eye -->
+    <rect x="4" y="8" width="1" height="1" fill="#000"/>
+
+    <!-- legs -->
+    <rect x="5" y="12" width="1" height="2" fill="#2b1a12"/>
+    <rect x="10" y="12" width="1" height="2" fill="#2b1a12"/>
+
+  </g>
+</g>
+</svg>
