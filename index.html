@@ -2022,6 +2022,16 @@ if(player.feral.feralId==='abyssmoth'&&Math.random()<0.25){ addLog(`🌑 Void Wi
   dmg=Math.max(1,Math.round(dmg-reduction));
   if(player.feral.feralId==='bramblehog'){
   dmg=Math.max(1,Math.round(dmg*0.85));
+    // ===== NEW FERAL DEFENSIVE ABILITIES =====
+if(player.feral.feralId==='drizzlefin'&&Math.random()<0.2){ dmg=Math.max(1,Math.round(dmg*0.8)); addLog(`🌧️ Raincoat softened the hit!`,'log-ability'); }
+if(player.feral.feralId==='grubrock'){ dmg=Math.max(1,Math.round(dmg*0.9)); addLog(`🪨 Stone Belly reduced damage!`,'log-ability'); }
+if(player.feral.feralId==='marshhorn'&&Math.random()<0.25){ enemy.spd=Math.max(1,enemy.spd-1); addLog(`🌊 Bogstep slowed the enemy!`,'log-ability'); }
+if(player.feral.feralId==='gravemole'){ dmg=Math.max(1,Math.round(dmg*0.9)); addLog(`⚰️ Grave Dirt toughened Gravemole!`,'log-ability'); }
+if(player.feral.feralId==='terrapinch'){ dmg=Math.max(1,Math.round(dmg*0.85)); addLog(`🐢 Shell Clamp reduced damage!`,'log-ability'); }
+if(player.feral.feralId==='smoldursa'&&Math.random()<0.25){ dmg=Math.max(1,Math.round(dmg*0.75)); addLog(`🐻 Smoke Coat blurred the hit!`,'log-ability'); }
+if(player.feral.feralId==='shardillo'&&Math.random()<0.3){ enemy.hp-=4; addLog(`💎 Crystal Shell cut the enemy! -4HP`,'log-ability'); }
+if(player.feral.feralId==='crystox'){ dmg=Math.max(1,Math.round(dmg*0.8)); addLog(`💎 Prism Horns deflected the blow!`,'log-ability'); }
+if(player.feral.feralId==='primordra'){ dmg=Math.max(1,Math.round(dmg*0.75)); addLog(`🌍 Worldback endured the hit!`,'log-ability'); }
   addLog(`🌿 Rooted Hide! Damage reduced!`,'log-ability');
   }
   const typeMult = getTypeMultiplier(enemy.type, player.feral.type);
