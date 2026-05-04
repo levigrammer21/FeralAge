@@ -1,0 +1,49 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes wave-roll {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+@keyframes water-shimmer {
+  0%,100% { opacity:.4; }
+  50% { opacity:.9; }
+}
+@keyframes crest-sway {
+  0%,100% { transform:translateX(0px); }
+  50% { transform:translateX(1px); }
+}
+</style>
+
+<!-- water droplets -->
+<rect x="2" y="5" width="1" height="1" fill="#7dd3fc" style="animation:water-shimmer 1.2s infinite"/>
+<rect x="13" y="6" width="1" height="1" fill="#38bdf8" style="animation:water-shimmer 1.5s infinite .3s"/>
+
+<g style="animation:wave-roll 1.6s ease-in-out infinite;">
+  <!-- flowing body -->
+  <rect x="5" y="8" width="7" height="3" fill="#0c4a6e"/>
+  <rect x="6" y="7" width="5" height="2" fill="#0284c7"/>
+  <rect x="7" y="8" width="3" height="2" fill="#38bdf8"/>
+
+  <!-- wave crest (key feature) -->
+  <g style="animation:crest-sway 1.3s ease-in-out infinite;">
+    <rect x="9" y="6" width="2" height="1" fill="#7dd3fc"/>
+    <rect x="10" y="5" width="1" height="1" fill="#e0f2fe"/>
+    <rect x="11" y="6" width="1" height="1" fill="#bae6fd"/>
+  </g>
+
+  <!-- head (more fluid shape) -->
+  <rect x="4" y="7" width="3" height="2" fill="#0369a1"/>
+  <rect x="3" y="8" width="2" height="1" fill="#0c4a6e"/>
+
+  <!-- eye -->
+  <rect x="5" y="8" width="1" height="1" fill="#000"/>
+  <rect x="6" y="8" width="1" height="1" fill="#e0f2fe"/>
+
+  <!-- tail wave -->
+  <rect x="11" y="8" width="2" height="1" fill="#38bdf8"/>
+  <rect x="13" y="7" width="1" height="1" fill="#7dd3fc"/>
+
+  <!-- underside ripple -->
+  <rect x="6" y="11" width="4" height="1" fill="#7dd3fc" opacity=".3" style="animation:water-shimmer 1.8s infinite"/>
+</g>
+</svg>
