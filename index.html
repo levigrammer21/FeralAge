@@ -1904,7 +1904,13 @@ enemy.hp-=dmg;
   animateFighter('playerFighter',true);
   animateFighter('enemyFighter',false,true);
 }
-
+function hitEffect(isEnemy){
+  const el = document.querySelector(isEnemy ? '#enemySprite' : '#playerSprite');
+  if(!el) return;
+  el.classList.remove('hit');
+  void el.offsetWidth;
+  el.classList.add('hit');
+}
 function enemyAttacks() {
   const {player,enemy}=battleState;
   if(enemy.paralyzed&&Math.random()<0.3) return;
