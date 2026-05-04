@@ -1978,7 +1978,47 @@ if(player.feral.feralId==='astrael'&&Math.random()<0.25){
   dmg *= 2;
   addLog(`✂️ Quick Snip! ${getFeralDisplayName(player.feral)} strikes twice!`,'log-ability');
 }
+if(player.feral.feralId==='lumipup'&&Math.random()<0.25){
+  player.hp=Math.min(player.maxHp,player.hp+4);
+  addLog(`✨ Glowheart restored +4HP!`,'log-ability');
+}
 
+if(player.feral.feralId==='grimelk'&&Math.random()<0.2){
+  enemy.atk=Math.max(1,enemy.atk-2);
+  addLog(`🌑 Dread Stare lowered enemy ATK!`,'log-ability');
+}
+
+if(player.feral.feralId==='kelpcat'&&Math.random()<0.25){
+  enemy.spd=Math.max(1,enemy.spd-2);
+  addLog(`🌿 Kelp Snare slowed the enemy!`,'log-ability');
+}
+
+if(player.feral.feralId==='tsunamole'){
+  player.tsunamoleStacks=Math.min(6,(player.tsunamoleStacks||0)+1);
+  dmg+=player.tsunamoleStacks;
+  addLog(`🌊 Waveback builds! +${player.tsunamoleStacks} damage!`,'log-ability');
+}
+
+if(player.feral.feralId==='frostgulp'){
+  player.frostgulpStacks=(player.frostgulpStacks||0)+1;
+  if(player.frostgulpStacks>=3){
+    player.frostgulpStacks=0;
+    dmg+=10;
+    enemy.paralyzed=true;
+    addLog(`❄️ Ice Pouch burst! +10 damage and freeze!`,'log-ability');
+  }
+}
+
+if(player.feral.feralId==='emberdrake'){
+  player.emberdrakeStacks=Math.min(5,(player.emberdrakeStacks||0)+1);
+  dmg+=player.emberdrakeStacks;
+  addLog(`🐉 Warmblood grows! +${player.emberdrakeStacks} damage!`,'log-ability');
+}
+
+if(player.feral.feralId==='moonreign'&&Math.random()<0.25){
+  dmg=Math.round(dmg*1.25);
+  addLog(`🌙 Crescent Crown empowered the attack!`,'log-ability');
+}
 enemy.hp-=dmg;
   addLog(`${isSpecial?'✨':'⚔️'} ${getFeralDisplayName(player.feral)} used ${isSpecial?player.feral.specialAttack:player.feral.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
   if(isSpecial) soundSpecial(); else soundHit();
