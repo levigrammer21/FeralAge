@@ -1,0 +1,51 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes rock-shift {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+@keyframes dust-fade {
+  0%,100% { opacity:.25; }
+  50% { opacity:.65; }
+}
+</style>
+
+<!-- dirt flecks -->
+<rect x="2" y="11" width="1" height="1" fill="#a16207" opacity=".45" style="animation:dust-fade 1.5s infinite"/>
+<rect x="13" y="12" width="1" height="1" fill="#92400e" opacity=".35" style="animation:dust-fade 1.8s infinite .3s"/>
+
+<g style="animation:rock-shift 1.4s ease-in-out infinite;">
+  <!-- shell outline -->
+  <rect x="4" y="6" width="8" height="5" fill="#292524"/>
+  <rect x="5" y="5" width="6" height="2" fill="#292524"/>
+
+  <!-- shell fill -->
+  <rect x="5" y="6" width="6" height="4" fill="#78716c"/>
+  <rect x="6" y="5" width="4" height="2" fill="#a8a29e"/>
+
+  <!-- stone segments -->
+  <rect x="6" y="7" width="1" height="3" fill="#44403c"/>
+  <rect x="8" y="7" width="1" height="3" fill="#57534e"/>
+  <rect x="10" y="7" width="1" height="2" fill="#44403c"/>
+
+  <!-- face -->
+  <rect x="4" y="9" width="3" height="2" fill="#57534e"/>
+  <rect x="4" y="9" width="1" height="2" fill="#292524"/>
+
+  <!-- eye -->
+  <rect x="6" y="9" width="1" height="1" fill="#000"/>
+
+  <!-- tiny mandible -->
+  <rect x="3" y="10" width="1" height="1" fill="#292524"/>
+
+  <!-- belly -->
+  <rect x="6" y="10" width="5" height="1" fill="#44403c"/>
+
+  <!-- feet -->
+  <rect x="6" y="11" width="1" height="2" fill="#292524"/>
+  <rect x="10" y="11" width="1" height="2" fill="#292524"/>
+</g>
+
+<!-- ground shadow -->
+<rect x="5" y="13" width="7" height="1" fill="#1c1917" opacity=".7"/>
+</svg>
