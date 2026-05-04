@@ -1099,7 +1099,7 @@ async function checkPin() {
 
 async function refreshSavedFeralStatsOnce() {
   if (!playerData || !Array.isArray(playerData.ferals)) return;
-  const CURRENT_BALANCE_VERSION = 1;
+  const CURRENT_BALANCE_VERSION = 2;
   if (playerData.balanceVersion === CURRENT_BALANCE_VERSION) return;
   playerData.ferals = playerData.ferals.map(f => {
     const base = FERALS_DATA[f.feralId];
