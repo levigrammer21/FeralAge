@@ -2188,7 +2188,7 @@ async function finishBattle() {
     else if(lootRoll<45){ const c=allItems.filter(i=>i.rarity==='rare'); loot=c[Math.floor(Math.random()*c.length)]; }
     else if(lootRoll<48){ const c=allItems.filter(i=>i.rarity==='epic'||i.rarity==='legendary'); loot=c[Math.floor(Math.random()*c.length)]; }
 
-    const shardReward=isDungeon?rollRange(30,60):rollRange(10,25);
+    const shardReward=isDungeon?rollRange(15,30):rollRange(1,10);
     playerData.shards=(playerData.shards||0)+shardReward;
     playerData.tamerXp=(playerData.tamerXp||0)+20;
     playerData.totalShards=(playerData.totalShards||0)+shardReward;
