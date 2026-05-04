@@ -1707,6 +1707,42 @@ function getRandomWildFeralKey() {
 }
 
 let selectedBattleFeral = null;
+  // ===== ENERGY SYSTEM =====
+const ENERGY_MAX = 7;
+const ENERGY_REGEN_MS = 10 * 60 * 1000; // 10 minutes
+
+function getFeralEnergy(feral) {
+  const now = Date.now();
+  const last = feral.lastEnergyUpdate || now;
+  const stored = feral.energy ?? ENERGY_MAX;
+  if (stored >= ENERGY_MAX) return ENERGY_MAX;
+  const regained = Math.floor((now - last) / ENERGY_REGEN_MS);
+  return Math.min(ENERGY_MAX, stored + regained);
+}
+
+function updateFeralEnergy(feral) {
+  const now = Date.now();
+  const current = getFeralEnergy(feral);
+  feral.energy = current;
+  if (current >= ENERGY_MAX) {
+    feral.lastEnergyUpdate = now;
+  } else {
+    const last = feral.lastEnergyUpdate || now;
+    const used = Math.floor((now - last) / ENERGY_REGEN_MS);
+    feral.lastEnergyUpdate = last + used * ENERGY_REGEN_MS;
+  }
+  return current;
+}
+
+function energyRefillsIn(feral) {
+  if (getFeralEnergy(feral) >= ENERGY_MAX) return null;
+  const last = feral.lastEnergyUpdate || Date.now();
+  const elapsed = Date.now() - last;
+  const remaining = ENERGY_REGEN_MS - (elapsed % ENERGY_REGEN_MS);
+  const mins = Math.ceil(remaining / 60000);
+  return mins;
+}
+// ===== END ENERGY SYSTEM =====
 let previewEnemy = null;
 
 function feralSpriteHTML(feralId, shiny, size) {
