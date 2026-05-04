@@ -880,6 +880,18 @@ function closeModal(e) { if(!e||e.target===document.getElementById('modalOverlay
 function openModal(html) { document.getElementById('modalBody').innerHTML=html; document.getElementById('modalOverlay').style.display='flex'; }
 function getRarityClass(r) { return `rarity-${r}`; }
 function rollRange(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
+function getTypeMultiplier(attackerType, defenderType) {
+  if (!attackerType || !defenderType) return 1;
+
+  if (attackerType === 'fire' && defenderType === 'earth') return 1.2;
+  if (attackerType === 'earth' && defenderType === 'water') return 1.2;
+  if (attackerType === 'water' && defenderType === 'fire') return 1.2;
+
+  if (attackerType === 'light' && defenderType === 'dark') return 1.2;
+  if (attackerType === 'dark' && defenderType === 'light') return 1.2;
+
+  return 1;
+}
 function isNighttime() { const h=new Date().getHours(); return h>=20||h<6; }
 
 // Returns the display name (nickname if set, else species name)
