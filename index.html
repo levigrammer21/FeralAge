@@ -1882,6 +1882,11 @@ function enemyAttacks() {
   if(player.feral.feralId==='galehawk') reduction+=dmg*0.2;
   if(player.feral.feralId==='pebblox'&&player.hp<player.maxHp*0.3) dmg=Math.round(dmg*0.5);
   dmg=Math.max(1,Math.round(dmg-reduction));
+  const typeMult = getTypeMultiplier(enemy.type, player.feral.type);
+if(typeMult > 1){
+  dmg = Math.round(dmg * typeMult);
+  addLog(`⚡ Enemy type advantage!`,'log-ability');
+}
   if(player.feral.feralId==='coralwing'&&Math.random()<0.4){ enemy.poisoned=true; addLog(`🐚 Venomshell! ${enemy.name} is poisoned!`,'log-ability'); }
   if(player.feral.feralId==='thornback'&&Math.random()<0.4){ enemy.bleeding=true; addLog(`🌿 Briarplate! ${enemy.name} bleeds!`,'log-ability'); }
   if(player.feral.feralId==='embertoad'&&Math.random()<0.5){ enemy.burned=true; addLog(`🐸 Lavacoat! ${enemy.name} burns!`,'log-ability'); }
