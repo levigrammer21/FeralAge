@@ -1242,3 +1242,1547 @@ function energyRefillsIn(feral) {
   const last=feral.lastEnergyUpdate||Date.now();
   return Math.ceil((ENERGY_REGEN_MS-(Date.now()-last)%ENERGY_REGEN_MS)/60000);
 }
+// ============================================================
+// PART 4 OF 5 — ALL GAME LOGIC
+// Paste this directly after Part 3
+// ============================================================
+
+// ===== LOGIN =====
+const LOGIN_SPRITE_ROTATION = ['sylvix','lunnis','duskfang','tempus','detonax','tyranus','hexcoon','ashenwing','voidfin','embrak'];
+const LOGIN_SPRITE_FALLBACKS = {sylvix:'🦊',lunnis:'🐇',duskfang:'🐺',tempus:'🐱',detonax:'🦀',tyranus:'🦖',hexcoon:'🦝',ashenwing:'🐉',voidfin:'🦈',embrak:'🐻'};
+
+function renderLogin() {
+  let rotIdx = Math.floor(Math.random() * LOGIN_SPRITE_ROTATION.length);
+  const spriteEl = document.getElementById('loginSprite');
+  const showSprite = () => {
+    const fid = LOGIN_SPRITE_ROTATION[rotIdx++ % LOGIN_SPRITE_ROTATION.length];
+    if(!spriteEl) return;
+    const img = document.createElement('img');
+    img.src = 'sprites/'+fid+'.svg';
+    img.style.cssText = 'width:72px;height:72px;image-rendering:pixelated;display:block;';
+    img.onerror = () => { spriteEl.innerHTML = `<span style="font-size:60px;display:block;text-align:center;">${LOGIN_SPRITE_FALLBACKS[fid]||'🐾'}</span>`; };
+    spriteEl.innerHTML = ''; spriteEl.appendChild(img);
+  };
+  showSprite();
+  if(window._loginSpriteInterval) clearInterval(window._loginSpriteInterval);
+  window._loginSpriteInterval = setInterval(showSprite, 2500);
+
+  const grid = document.createElement('div'); grid.className = 'avatar-grid';
+  PLAYERS.forEach((p,i) => {
+    const btn = document.createElement('button'); btn.className = 'avatar-btn';
+    btn.innerHTML = `<span class="av-icon">${p.icon}</span><div class="av-name">${p.name}</div><div class="av-sub">TAP TO PLAY</div>`;
+    btn.addEventListener('click', () => selectPlayer(i));
+    grid.appendChild(btn);
+  });
+  const ps = document.getElementById('playerSelect'); ps.innerHTML = ''; ps.appendChild(grid);
+}
+
+function selectPlayer(idx) {
+  if(window._loginSpriteInterval){ clearInterval(window._loginSpriteInterval); window._loginSpriteInterval=null; }
+  selectedPlayerIdx=idx; pinInput=''; updatePinDots();
+  document.getElementById('pinTitle').textContent = PLAYERS[idx].name.toUpperCase()+' — ENTER PIN';
+  document.getElementById('pinError').textContent = '';
+  showScreen('pinScreen');
+}
+window.selectPlayer = selectPlayer;
+
+function pinKey(k) { if(pinInput.length>=4) return; pinInput+=k; updatePinDots(); if(pinInput.length===4) checkPin(); }
+function pinDel()  { pinInput=pinInput.slice(0,-1); updatePinDots(); }
+window.pinKey = pinKey;
+window.pinDel = pinDel;
+
+function updatePinDots() {
+  for(let i=0;i<4;i++) document.getElementById('dot'+i).classList.toggle('filled', i<pinInput.length);
+}
+
+async function checkPin() {
+  const player = PLAYERS[selectedPlayerIdx];
+  if(pinInput === player.pin) {
+    currentPlayer = player;
+    playerData = await loadPlayerData(player.id);
+    playerData.ferals = (playerData.ferals||[]).map(f=>({...f, currentHp:f.currentHp??f.stats?.hp??50}));
+    document.getElementById('pinError').textContent = '';
+    enterGame();
+  } else {
+    document.getElementById('pinError').textContent = '✗ Wrong PIN';
+    pinInput=''; updatePinDots();
+  }
+}
+
+async function refreshSavedFeralStatsOnce() {
+  if(!playerData||!Array.isArray(playerData.ferals)) return;
+  const CURRENT_BALANCE_VERSION = 2;
+  if(playerData.balanceVersion===CURRENT_BALANCE_VERSION) return;
+  playerData.ferals = playerData.ferals.map(f => {
+    const base = FERALS_DATA[f.feralId]; if(!base) return f;
+    return { ...f, name:base.name, sprite:base.sprite, rarity:base.rarity, ability:base.ability, basicAttack:base.basicAttack, specialAttack:base.specialAttack, stats:{...base.baseStats}, currentHp:base.baseStats.hp };
+  });
+  playerData.balanceVersion = CURRENT_BALANCE_VERSION;
+  await savePlayerData();
+  showNotif('✅ Ferals updated to new stats!');
+}
+
+async function enterGame() {
+  await refreshSavedFeralStatsOnce();
+  showScreen('gameScreen');
+  updateTopbar();
+  switchTab('home');
+  renderShop();
+  renderTrap();
+  startRestHealing();
+}
+
+function updateTopbar() {
+  const xp=playerData.tamerXp||0, lvl=getLevelFromXp(xp);
+  playerData.tamerLevel = lvl;
+  document.getElementById('topbarName').textContent  = currentPlayer.name.toUpperCase();
+  document.getElementById('topbarLevel').textContent = `Lv.${lvl} Tamer${lvl>=99?' (MAX)':''}`;
+  document.getElementById('shardCount').textContent  = `💎 ${Math.floor(playerData.shards)}`;
+  document.getElementById('shopShards').textContent  = `💎 ${Math.floor(playerData.shards)} Shards`;
+  document.getElementById('xpText').textContent      = `${xp.toLocaleString()} XP`;
+  document.getElementById('xpNext').textContent      = lvl>=99 ? 'MAX LEVEL' : `Next Lv: ${getXpToNextLevel(xp).toLocaleString()} XP`;
+  document.getElementById('xpBar').style.width       = getXpProgress(xp)+'%';
+  updateBaitDisplay();
+}
+
+// ===== TABS =====
+window.switchTab = function(tab) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  document.getElementById('nav-'+tab)?.classList.add('active');
+  if(tab==='home')        renderHome();
+  if(tab==='roster')      renderRoster();
+  if(tab==='battle')      renderBattleSelect();
+  if(tab==='pvp')         renderPvP();
+  if(tab==='trap')        renderTrap();
+  if(tab==='leaderboard') renderLeaderboard();
+  if(tab==='market')      renderMarket();
+  if(tab==='forage')      renderForage();
+  if(tab==='tamer')       renderTamer();
+  if(tab==='dex')         renderDex();
+  if(tab==='fishing')     renderFishing();
+  if(tab==='inventory')   renderInventory();
+};
+
+// ===== HOME =====
+function renderHome() {
+  const ferals = (playerData.ferals||[]).filter(f=>f.alive!==false);
+  const list = document.getElementById('homeRoster');
+  if(ferals.length===0) { list.innerHTML=`<div class="empty-state"><span class="empty-icon">🪤</span>No Ferals yet!<br>Set a trap to catch your first Feral.</div>`; return; }
+  list.innerHTML = ferals.slice(0,3).map(f=>feralCardHTML(f)).join('');
+  const pending = (playerData.pvpChallenges||[]).filter(c=>c.status==='pending'&&c.defenderId===currentPlayer.id);
+  document.getElementById('pvpNotif').textContent = pending.length>0 ? `⚠️ ${pending.length} challenge waiting!` : 'Challenge another tamer';
+}
+
+function feralCardHTML(feral, clickable=true) {
+  const hp=feral.stats?.hp||50, curHp=feral.currentHp??hp;
+  const hpPct=Math.max(0,Math.round((curHp/hp)*100));
+  const hpColor=hpPct>50?'var(--green)':hpPct>25?'var(--gold)':'var(--red)';
+  const displayName=getFeralDisplayName(feral);
+  return `<div class="card" ${clickable?`onclick="openFeralDetail('${feral.id}')"`:''} style="cursor:${clickable?'pointer':'default'};margin-bottom:12px;">
+    <div class="feral-card">
+      ${feralSpriteHTML(feral.feralId||feral.id,feral.shiny||'none','40px')}
+      <div class="feral-info">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div class="feral-name">${displayName}</div>
+          ${feral.nickname?`<div style="color:var(--text2);font-size:13px;">(${feral.name})</div>`:''}
+          <span class="rarity-badge ${getRarityClass(feral.rarity)}">${feral.rarity.toUpperCase()}</span>
+          ${shinyBadgeHTML(feral.shiny||'none')}
+        </div>
+        <div class="feral-sub">HP: ${curHp}/${hp} | ATK:${feral.stats?.atk} DEF:${feral.stats?.def} SPD:${feral.stats?.spd}</div>
+        <div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>
+        <div class="feral-sub" style="margin-top:4px;">⚔️ ${feral.wins||0} wins | 💀 ${feral.kills||0} kills</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== ROSTER =====
+let rosterFilter='all', rosterSort='rarity', dragSrcIdx=null;
+const rarityOrder={common:0,uncommon:1,rare:2,epic:3,legendary:4};
+
+window.setRosterFilter = function(f) {
+  rosterFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filter-'+f)?.classList.add('active');
+  renderRoster();
+};
+window.setRosterSort = function(s) {
+  rosterSort=s;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sort-'+s)?.classList.add('active');
+  renderRoster();
+};
+
+function getSortedFilteredFerals() {
+  let ferals=[...(playerData.ferals||[])];
+  if(rosterFilter==='alive')  ferals=ferals.filter(f=>f.alive!==false);
+  if(rosterFilter==='fallen') ferals=ferals.filter(f=>f.alive===false);
+  if(rosterSort==='rarity') ferals.sort((a,b)=>(rarityOrder[b.rarity]||0)-(rarityOrder[a.rarity]||0));
+  else if(rosterSort==='hp')   ferals.sort((a,b)=>(b.stats?.hp||0)-(a.stats?.hp||0));
+  else if(rosterSort==='atk')  ferals.sort((a,b)=>(b.stats?.atk||0)-(a.stats?.atk||0));
+  else if(rosterSort==='def')  ferals.sort((a,b)=>(b.stats?.def||0)-(a.stats?.def||0));
+  else if(rosterSort==='spd')  ferals.sort((a,b)=>(b.stats?.spd||0)-(a.stats?.spd||0));
+  else if(rosterSort==='wins') ferals.sort((a,b)=>(b.wins||0)-(a.wins||0));
+  else if(rosterSort==='name') ferals.sort((a,b)=>getFeralDisplayName(a).localeCompare(getFeralDisplayName(b)));
+  return ferals;
+}
+
+function renderRoster() {
+  const allFerals=playerData.ferals||[];
+  document.getElementById('rosterCount').textContent=`(${allFerals.filter(f=>f.alive!==false).length}/100)`;
+  const ferals=getSortedFilteredFerals();
+  const list=document.getElementById('rosterList');
+  if(ferals.length===0) { list.innerHTML=`<div class="empty-state"><span class="empty-icon">${rosterFilter==='fallen'?'💀':'🪤'}</span>${rosterFilter==='fallen'?'No fallen Ferals.':'No Ferals yet!'}</div>`; return; }
+  list.innerHTML=`<div class="feral-grid" id="feralGrid">${ferals.map((f,i)=>feralGridCard(f,i)).join('')}</div>`;
+  setupDragDrop();
+}
+
+function feralGridCard(f, idx) {
+  const hp=f.stats?.hp||50, curHp=f.currentHp??hp;
+  const hpPct=Math.max(0,Math.round((curHp/hp)*100));
+  const hpColor=hpPct>50?'var(--green)':hpPct>25?'var(--gold)':'var(--red)';
+  const fallen=f.alive===false;
+  const rc={common:'#94a3b8',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#f59e0b'}[f.rarity]||'#94a3b8';
+  const shinyIcon=f.shiny==='both'?'🌟':f.shiny==='glow'?'✨':f.shiny==='invert'?'🔄':'';
+  return `<div class="feral-grid-card ${fallen?'fallen-card':''}" data-feral-id="${f.id}" data-idx="${idx}"
+    onclick="openFeralDetail('${f.id}')" draggable="${!fallen}"
+    ondragstart="onDragStart(event,${idx})" ondragover="onDragOver(event)"
+    ondrop="onDrop(event,${idx})" ondragleave="onDragLeave(event)" ondragend="onDragEnd(event)">
+    ${shinyIcon?`<span class="fgc-shiny-badge">${shinyIcon}</span>`:''}
+    ${fallen?'<span class="fgc-fallen-badge">💀</span>':''}
+    <div style="${fallen?'opacity:0.5':''};">${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','32px')}</div>
+    <div class="fgc-name">${getFeralDisplayName(f)}</div>
+    ${!fallen?`<div class="fgc-hp"><div class="fgc-hp-fill" style="width:${hpPct}%;background:${hpColor};"></div></div>`:''}
+    <span class="fgc-rarity" style="color:${rc};border-color:${rc};">${f.rarity.toUpperCase()}</span>
+    ${!fallen?`<div style="font-size:13px;color:var(--text2);margin-top:2px;">⚔️${f.wins||0} 💀${f.kills||0}</div>`:''}
+  </div>`;
+}
+
+function setupDragDrop() {
+  document.querySelectorAll('.feral-grid-card[draggable="true"]').forEach(card => {
+    let touchStartY, touchStartX, isDragging=false;
+    card.addEventListener('touchstart', e=>{ touchStartY=e.touches[0].clientY; touchStartX=e.touches[0].clientX; isDragging=false; },{passive:true});
+    card.addEventListener('touchmove',  e=>{ if(Math.abs(e.touches[0].clientY-touchStartY)>10||Math.abs(e.touches[0].clientX-touchStartX)>10) isDragging=true; },{passive:true});
+    card.addEventListener('touchend',   e=>{
+      if(!isDragging) return;
+      const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+      const target=el?.closest('.feral-grid-card');
+      if(target&&target!==card) swapFeralPositions(card.dataset.feralId,target.dataset.feralId);
+    });
+  });
+}
+
+window.onDragStart = (e,idx)=>{ dragSrcIdx=idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
+window.onDragOver  = e=>{ e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
+window.onDragLeave = e=>{ e.currentTarget.classList.remove('drag-over'); };
+window.onDragEnd   = e=>{ e.currentTarget.classList.remove('dragging'); document.querySelectorAll('.feral-grid-card').forEach(c=>c.classList.remove('drag-over')); };
+window.onDrop = (e,dstIdx)=>{
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if(dragSrcIdx===null||dragSrcIdx===dstIdx) return;
+  const sorted=getSortedFilteredFerals();
+  if(sorted[dragSrcIdx]&&sorted[dstIdx]) swapFeralPositions(sorted[dragSrcIdx].id,sorted[dstIdx].id);
+};
+
+function swapFeralPositions(idA,idB) {
+  const ferals=playerData.ferals||[];
+  const ia=ferals.findIndex(f=>f.id===idA), ib=ferals.findIndex(f=>f.id===idB);
+  if(ia===-1||ib===-1) return;
+  [ferals[ia],ferals[ib]]=[ferals[ib],ferals[ia]];
+  playerData.ferals=ferals; savePlayerData(); renderRoster();
+}
+
+window.openFeralDetail = function(feralId) {
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  const trinket=feral.trinket?findItem(feral.trinket):null;
+  const essence=feral.essence?findItem(feral.essence):null;
+  const stone=feral.stone?findItem(feral.stone):null;
+  const displayName=getFeralDisplayName(feral);
+  const fishItems=(playerData.inventory||[]).filter(i=>i.itemId?.startsWith('fish_'));
+  openModal(`
+    <div style="text-align:center;margin-bottom:16px;">
+      <div>${feralSpriteHTML(feral.feralId||feral.id,feral.shiny||'none','64px')}</div>
+      <div class="modal-title">${displayName} ${shinyBadgeHTML(feral.shiny||'none')}</div>
+      ${feral.nickname?`<div style="color:var(--text2);font-size:15px;margin-bottom:4px;">(${feral.name})</div>`:''}
+      <span class="rarity-badge ${getRarityClass(feral.rarity)}">${feral.rarity.toUpperCase()}</span>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val">${feral.stats?.hp}</div></div>
+      <div class="stat-box"><div class="stat-label">ATK</div><div class="stat-val">${feral.stats?.atk}</div></div>
+      <div class="stat-box"><div class="stat-label">DEF</div><div class="stat-val">${feral.stats?.def}</div></div>
+      <div class="stat-box"><div class="stat-label">SPD</div><div class="stat-val">${feral.stats?.spd}</div></div>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:16px;justify-content:center;">
+      <span style="color:var(--gold);">⚔️ ${feral.wins||0} wins</span>
+      <span style="color:var(--red);">💀 ${feral.kills||0} kills</span>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">ABILITY</div>
+      <span class="ability-tag">⚡ ${feral.ability?.name}: ${feral.ability?.desc}</span>
+    </div>
+    ${FERAL_LORE[feral.feralId]?`<div style="margin-top:12px;padding:10px;background:var(--bg3);border:1px solid var(--border);font-size:15px;color:var(--text2);font-style:italic;">${FERAL_LORE[feral.feralId]}</div>`:''}
+    <div style="margin-top:12px;">
+      <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">ATTACKS</div>
+      <div style="font-size:17px;">⚔️ ${feral.basicAttack}<br>✨ ${feral.specialAttack}</div>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">EQUIPPED</div>
+      <div class="item-slots">
+        <div class="item-slot" onclick="openEquipSlot('${feralId}','trinket')"><div class="item-slot-type">TRINKET</div><div class="item-slot-icon">${trinket?trinket.icon:'+'}</div><div class="item-slot-name">${trinket?trinket.name:'Empty'}</div></div>
+        <div class="item-slot" onclick="openEquipSlot('${feralId}','essence')"><div class="item-slot-type">ESSENCE</div><div class="item-slot-icon">${essence?essence.icon:'+'}</div><div class="item-slot-name">${essence?essence.name:'Empty'}</div></div>
+        <div class="item-slot" onclick="openEquipSlot('${feralId}','stone')"><div class="item-slot-type">STONE</div><div class="item-slot-icon">${stone?stone.icon:'+'}</div><div class="item-slot-name">${stone?stone.name:'Empty'}</div></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button class="btn btn-blue btn-sm" onclick="openNicknameModal('${feralId}')">✏️ ${feral.nickname?'RENAME':'NICKNAME'}</button>
+      ${fishItems.length>0?`<button class="btn btn-green btn-sm" onclick="feedFishToFeral('${feralId}')">🐟 FEED FISH</button>`:'<div></div>'}
+    </div>
+    ${feral.alive===false
+      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+           <button class="btn btn-gold btn-sm" onclick="openHealMenu('${feralId}')">🕯️ REVIVE</button>
+           <button class="btn btn-gray btn-sm" onclick="releaseFeral('${feralId}')">🕊️ LAY TO REST</button>
+         </div>`
+      : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+           <button class="btn btn-green btn-sm" onclick="openHealMenu('${feralId}')">💊 USE ITEM</button>
+           <button class="btn btn-red btn-sm" onclick="releaseFeral('${feralId}')">🌿 RELEASE</button>
+         </div>`
+    }`);
+};
+
+// ===== NICKNAME =====
+window.openNicknameModal = function(feralId) {
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  openModal(`
+    <div class="modal-title">✏️ NICKNAME</div>
+    <div style="text-align:center;margin-bottom:16px;">
+      ${feralSpriteHTML(feral.feralId||feral.id,feral.shiny||'none','48px')}
+      <div style="color:var(--text2);font-size:16px;margin-top:8px;">Species: ${feral.name}</div>
+    </div>
+    <input class="nickname-input" id="nicknameInput" type="text" maxlength="16" placeholder="Enter nickname..." value="${feral.nickname||''}"/>
+    <div style="color:var(--text2);font-size:15px;margin-bottom:12px;">Max 16 characters. Leave blank to clear.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button class="btn btn-green" onclick="saveNickname('${feralId}')">✓ SAVE</button>
+      <button class="btn btn-gray"  onclick="clearNickname('${feralId}')">✕ CLEAR</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('nicknameInput')?.focus(),100);
+};
+window.saveNickname = async function(feralId) {
+  const raw=(document.getElementById('nicknameInput')?.value||'').trim().slice(0,16);
+  const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId); if(idx===-1) return;
+  playerData.ferals[idx].nickname=raw||null;
+  await savePlayerData(); closeModal(); renderRoster();
+  showNotif(raw?`✏️ Nicknamed "${raw}"!`:'✕ Nickname cleared.', raw?'var(--accent2)':'var(--text2)');
+  openFeralDetail(feralId);
+};
+window.clearNickname = async function(feralId) {
+  const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId); if(idx===-1) return;
+  playerData.ferals[idx].nickname=null;
+  await savePlayerData(); closeModal(); renderRoster();
+  showNotif('✕ Nickname cleared.','var(--text2)'); openFeralDetail(feralId);
+};
+
+// ===== EQUIP =====
+window.openEquipSlot = function(feralId,slotType) {
+  const inv=(playerData.inventory||[]).filter(i=>{ const item=findItem(i.itemId); return item&&item.type===slotType; });
+  if(inv.length===0){ openModal(`<div class="modal-title">NO ${slotType.toUpperCase()}S</div><p style="text-align:center;color:var(--text2);margin-top:12px;">No ${slotType}s in inventory.<br>Buy from the shop or find in battle!</p>`); return; }
+  openModal(`
+    <div class="modal-title">EQUIP ${slotType.toUpperCase()}</div>
+    <div class="scroll-list">
+      <div class="shop-item" onclick="equipItem('${feralId}','${slotType}',null)"><div class="shop-item-icon">❌</div><div class="shop-item-info"><div class="shop-item-name">UNEQUIP</div><div class="shop-item-desc">Remove current ${slotType}</div></div></div>
+      ${inv.map(i=>{ const item=findItem(i.itemId); if(!item) return '';
+        return `<div class="shop-item" onclick="equipItem('${feralId}','${slotType}','${item.id}')"><div class="shop-item-icon">${item.icon}</div><div class="shop-item-info"><div class="shop-item-name">${item.name}</div><div class="shop-item-desc">${item.desc}</div></div><span class="rarity-badge ${getRarityClass(item.rarity)}">${item.rarity.toUpperCase()}</span></div>`; }).join('')}
+    </div>`);
+};
+window.equipItem = async function(feralId,slotType,itemId) {
+  const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId); if(idx===-1) return;
+  playerData.ferals[idx][slotType]=itemId;
+  await savePlayerData(); closeModal();
+  showNotif(itemId?'✓ Equipped!':'✓ Unequipped!');
+  openFeralDetail(feralId);
+};
+
+// ===== HEAL MENU =====
+window.openHealMenu = function(feralId) {
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  const fallen=feral.alive===false;
+  const validTypes=fallen?['revival']:['healing','revival'];
+  const healItems=(playerData.inventory||[]).filter(i=>{ const item=findItem(i.itemId); return item&&validTypes.includes(item.type); });
+  if(healItems.length===0){ openModal(`<div class="modal-title">NO ITEMS</div><p style="text-align:center;color:var(--text2);margin-top:12px;">Buy items from the shop!</p>`); return; }
+  const curHp=feral.currentHp??feral.stats?.hp, maxHp=feral.stats?.hp;
+  openModal(`
+    <div class="modal-title">${fallen?'🕯️ REVIVE':'💊 HEAL'} ${getFeralDisplayName(feral).toUpperCase()}</div>
+    <p style="text-align:center;color:var(--text2);font-size:16px;margin-bottom:12px;">${fallen?'FALLEN':'HP: '+curHp+'/'+maxHp}</p>
+    <div class="scroll-list">
+      ${healItems.map((inv,invIdx)=>{ const item=findItem(inv.itemId); if(!item) return '';
+        const label=item.type==='revival'?'REVIVE 25% HP':item.healAll?`+${item.healAmount} ALL`:`+${Math.min(item.healAmount,maxHp-curHp)} HP`;
+        return `<div class="shop-item" onclick="useHealItem('${feralId}',${invIdx})"><div class="shop-item-icon">${item.icon}</div><div class="shop-item-info"><div class="shop-item-name">${item.name}</div><div class="shop-item-desc">${item.desc}</div></div><div style="color:var(--green);font-size:18px;">${label}</div></div>`; }).join('')}
+    </div>`);
+};
+window.useHealItem = async function(feralId,invIdx) {
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  const fallen=feral.alive===false;
+  const validTypes=fallen?['revival']:['healing','revival'];
+  const healInvItems=(playerData.inventory||[]).map((i,idx)=>({...i,_idx:idx})).filter(i=>{ const item=findItem(i.itemId); return item&&validTypes.includes(item.type); });
+  const invItem=healInvItems[invIdx]; if(!invItem) return;
+  const item=findItem(invItem.itemId); if(!item) return;
+  playerData.inventory.splice(invItem._idx,1);
+  if(item.type==='revival') {
+    const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
+    if(idx!==-1){ const maxHp=playerData.ferals[idx].stats?.hp||50; playerData.ferals[idx].alive=true; playerData.ferals[idx].currentHp=Math.max(1,Math.round(maxHp*0.25)); }
+    soundTame(); showNotif(`🕯️ ${getFeralDisplayName(feral)} returns from the edge...`,'var(--gold)');
+  } else if(item.healAll) {
+    (playerData.ferals||[]).forEach(f=>{ if(f.alive!==false) f.currentHp=Math.min(f.stats?.hp||50,(f.currentHp??0)+item.healAmount); });
+    soundHeal(); showNotif(`🍖 All Ferals healed +${item.healAmount} HP!`,'var(--green)');
+  } else {
+    const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
+    if(idx!==-1){ const maxHp=playerData.ferals[idx].stats?.hp||50; playerData.ferals[idx].currentHp=Math.min(maxHp,(playerData.ferals[idx].currentHp??0)+item.healAmount); }
+    soundHeal(); showNotif(`${item.icon} Used ${item.name}!`,'var(--green)');
+  }
+  await savePlayerData(); closeModal(); renderRoster(); openFeralDetail(feralId);
+};
+
+window.releaseFeral = async function(feralId) {
+  const idx=(playerData.ferals||[]).findIndex(f=>f.id===feralId); if(idx===-1) return;
+  const feral=playerData.ferals[idx], fallen=feral.alive===false;
+  const rarityShards={common:5,uncommon:10,rare:15,epic:25,legendary:50};
+  const shards=fallen?3:rarityShards[feral.rarity]||15;
+  playerData.ferals.splice(idx,1);
+  playerData.shards=(playerData.shards||0)+shards;
+  if(!fallen){ playerData.tamerXp=(playerData.tamerXp||0)+shards; playerData.totalShards=(playerData.totalShards||0)+shards; checkTamerLevelUp(); }
+  await savePlayerData(); closeModal(); renderRoster(); updateTopbar();
+  showNotif(fallen?`🕊️ Laid to rest. +${shards} 💎`:`🌿 Released! +${shards} 💎`,'var(--green)');
+};
+
+function checkTamerLevelUp() {
+  const newLevel=getLevelFromXp(playerData.tamerXp||0);
+  if(newLevel>(playerData.tamerLevel||1)){ playerData.tamerLevel=newLevel; showNotif(`🎉 Lv.${newLevel}! ${randomFrom(LEVEL_UP_MESSAGES)}`,'var(--gold)'); }
+}
+
+// ===== TRAP =====
+function renderTrap() {
+  renderTrapUpgrades();
+  const trap=playerData.trap;
+  const icon=document.getElementById('trapIcon'), status=document.getElementById('trapStatus');
+  const timer=document.getElementById('trapTimer'), content=document.getElementById('trapContent');
+  const claimBtn=document.getElementById('claimBtn');
+  if(trapInterval) clearInterval(trapInterval);
+  if(!trap){ const t=getTrapTier(); icon.textContent=t.icon; status.textContent='NO TRAP SET'; timer.textContent=''; content.style.display='block'; claimBtn.style.display='none'; return; }
+  const now=Date.now(), end=trap.endTime; content.style.display='none';
+  if(now>=end){ icon.textContent='🎉'; status.textContent='TRAP READY!'; timer.textContent=''; claimBtn.style.display='block'; return; }
+  claimBtn.style.display='none'; icon.textContent='⏳'; status.textContent='TRAP IS SET...';
+  trapInterval=setInterval(()=>{
+    const rem=Math.max(0,end-Date.now());
+    if(rem===0){ clearInterval(trapInterval); icon.textContent='🎉'; status.textContent='TRAP READY!'; timer.textContent=''; claimBtn.style.display='block'; return; }
+    timer.textContent=`${Math.floor(rem/60000)}:${String(Math.floor((rem%60000)/1000)).padStart(2,'0')}`;
+  },1000);
+}
+function renderTrapUpgrades() {
+  const tierIdx=playerData.trapTier||0;
+  const cur=TRAP_TIERS[tierIdx];
+  const td=document.getElementById('trapTierDisplay');
+  if(td) td.innerHTML=`${cur.icon} <span style="font-family:var(--pixel);font-size:8px;color:var(--accent2);">${cur.name}</span><br><span style="color:var(--text2);">${cur.desc}</span>`;
+  const list=document.getElementById('trapUpgradeList'); if(!list) return;
+  list.innerHTML=TRAP_TIERS.map((t,i)=>{
+    const owned=i<=tierIdx, isNext=i===tierIdx+1, canAfford=(playerData.shards||0)>=t.cost;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border:${owned?'2px solid var(--green)':'1px solid var(--border)'};margin-bottom:6px;">
+      <span style="font-size:28px;">${t.icon}</span>
+      <div style="flex:1;"><div style="font-family:var(--pixel);font-size:8px;color:${owned?'var(--green)':'var(--text)'};">${t.name} ${owned?'✓':''}</div><div style="color:var(--text2);font-size:15px;">${t.desc}</div></div>
+      ${owned?'':` <button class="btn btn-gold btn-sm" style="width:auto;padding:6px 10px;${!canAfford?'opacity:0.5;':''}" onclick="buyTrapUpgrade(${i})" ${!canAfford?'disabled':''}>💎 ${t.cost}</button>`}
+    </div>`;
+  }).join('');
+}
+window.buyTrapUpgrade = async function(tierIdx) {
+  const tier=TRAP_TIERS[tierIdx]; if(!tier) return;
+  if((playerData.shards||0)<tier.cost){ showNotif('Not enough Shards!','var(--red)'); return; }
+  const curTier=playerData.trapTier||0;
+  if(tierIdx<=curTier){ showNotif('Already unlocked!','var(--text2)'); return; }
+  if(tierIdx>curTier+1){ showNotif('Unlock previous tier first!','var(--red)'); return; }
+  playerData.shards-=tier.cost; playerData.trapTier=tierIdx;
+  await savePlayerData(); updateTopbar(); renderTrap();
+  showNotif(`${tier.icon} ${tier.name} unlocked!`,'var(--gold)');
+};
+window.setTrap = async function() {
+  playerData.trap={endTime:Date.now()+5*60*1000};
+  await savePlayerData(); renderTrap(); showNotif('🪤 Trap set! Come back in 5 minutes!');
+};
+window.claimTrap = async function() {
+  const trap=playerData.trap; if(!trap) return;
+  const escapeChance=getTrapTier().escapeChance, roll=Math.random()*100;
+  let rarity;
+  if(roll<escapeChance){ playerData.trap=null; await savePlayerData(); renderTrap(); openModal(`<div class="modal-title">TRAP FAILED</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">💨</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">${randomFrom(TRAP_FAIL_MESSAGES)}</div></div>`); return; }
+  const remaining=100-escapeChance, adj=roll-escapeChance;
+  if(adj<remaining*0.526) rarity='common';
+  else if(adj<remaining*0.789) rarity='uncommon';
+  else if(adj<remaining*0.921) rarity='rare';
+  else if(adj<remaining*0.974) rarity='epic';
+  else rarity='legendary';
+  const pool=Object.values(FERALS_DATA).filter(f=>f.rarity===rarity);
+  const caught=pool[Math.floor(Math.random()*pool.length)];
+  const tamerLv=playerData.tamerLevel||1;
+  const diff={common:0,uncommon:2,rare:5,epic:8,legendary:12}[rarity]||0;
+  const tameChance=Math.max(10,80-(diff-tamerLv)*10);
+  const tamed=Math.random()*100<tameChance, shiny=rollShiny();
+  playerData.trap=null;
+  if(!tamed){ await savePlayerData(); renderTrap(); openModal(`<div class="modal-title">THE ONE THAT GOT AWAY</div><div style="text-align:center;padding:20px 0;"><div>${feralSpriteHTML(caught.id,shiny,'56px')}</div><div style="font-size:20px;color:var(--text2);margin-top:12px;">A wild ${caught.name} appeared...<br>but broke free!</div>${shiny!=='none'?`<div style="color:var(--gold);margin-top:8px;">It was shiny too... 💔</div>`:''}</div>`); return; }
+  if((playerData.ferals||[]).filter(f=>f.alive!==false).length>=100){ await savePlayerData(); renderTrap(); openModal(`<div class="modal-title">ROSTER FULL!</div><div style="text-align:center;padding:20px;color:var(--text2);">Release a Feral to make room.</div>`); return; }
+  const newFeral=generateFeralInstance(caught.id,shiny);
+  playerData.ferals=[...(playerData.ferals||[]),newFeral];
+  playerData.totalCaught=(playerData.totalCaught||0)+1;
+  playerData.dexSeen=playerData.dexSeen||{};
+  playerData.dexSeen[newFeral.feralId]=playerData.dexSeen[newFeral.feralId]||{total:0,glow:false,invert:false,ultra:false};
+  playerData.dexSeen[newFeral.feralId].total++;
+  if(newFeral.shiny==='glow')   playerData.dexSeen[newFeral.feralId].glow=true;
+  if(newFeral.shiny==='invert') playerData.dexSeen[newFeral.feralId].invert=true;
+  if(newFeral.shiny==='both')   playerData.dexSeen[newFeral.feralId].ultra=true;
+  await savePlayerData(); renderTrap(); renderRoster();
+  if(shiny!=='none') soundShiny(); else soundCatch();
+  const lore=FERAL_LORE[newFeral.feralId]||'';
+  openModal(`
+    <div class="modal-title">${shiny==='both'?'🌟 ULTRA SHINY CATCH!!!':shiny!=='none'?'✨ SHINY CATCH!':'FERAL CAUGHT!'}</div>
+    <div style="text-align:center;padding:16px 0;">
+      <div>${feralSpriteHTML(newFeral.feralId,newFeral.shiny||'none','72px')}</div>
+      <div style="font-size:24px;color:var(--accent2);margin:12px 0;">${newFeral.name} ${shinyBadgeHTML(shiny)}</div>
+      <span class="rarity-badge ${getRarityClass(newFeral.rarity)}">${newFeral.rarity.toUpperCase()}</span>
+      <div style="font-size:16px;color:var(--gold);margin-top:8px;font-style:italic;">"${shiny!=='none'?randomFrom(SHINY_MESSAGES):randomFrom(CATCH_FLAVOR[newFeral.rarity]||CATCH_FLAVOR.common)}"</div>
+      <div class="stats-grid" style="margin-top:16px;">
+        <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val">${newFeral.stats.hp}</div></div>
+        <div class="stat-box"><div class="stat-label">ATK</div><div class="stat-val">${newFeral.stats.atk}</div></div>
+        <div class="stat-box"><div class="stat-label">DEF</div><div class="stat-val">${newFeral.stats.def}</div></div>
+        <div class="stat-box"><div class="stat-label">SPD</div><div class="stat-val">${newFeral.stats.spd}</div></div>
+      </div>
+      <div style="margin-top:12px;"><span class="ability-tag">⚡ ${newFeral.ability?.name}</span></div>
+      ${lore?`<div style="margin-top:14px;padding:10px;background:var(--bg3);border:1px solid var(--border);font-size:15px;color:var(--text2);font-style:italic;text-align:left;">${lore}</div>`:''}
+    </div>`);
+};
+
+// ===== BATTLE =====
+function getRandomWildFeralKey() {
+  const roll=Math.random()*100;
+  let rarity;
+  if(roll<55) rarity='common'; else if(roll<80) rarity='uncommon'; else if(roll<93) rarity='rare'; else if(roll<99) rarity='epic'; else rarity='legendary';
+  const pool=Object.values(FERALS_DATA).filter(f=>f.rarity===rarity);
+  return pool[Math.floor(Math.random()*pool.length)].id;
+}
+
+let selectedBattleFeral=null, previewEnemy=null;
+
+function renderBattleSelect() {
+  const alive=(playerData.ferals||[]).filter(f=>f.alive!==false&&(f.currentHp??f.stats?.hp)>0);
+  document.getElementById('battleContent').style.display='block';
+  document.getElementById('battleArena').style.display='none';
+  document.getElementById('battleStep1').style.display='block';
+  document.getElementById('battleStep2').style.display='none';
+  const list=document.getElementById('battleSelectList');
+  if(alive.length===0){ list.innerHTML='<div class="empty-state"><span class="empty-icon">😔</span>No Ferals available!</div>'; return; }
+  list.innerHTML='';
+  alive.forEach(f=>{
+    const div=document.createElement('div'); div.className='select-feral-item'; div.style.cursor='pointer';
+    div.innerHTML=feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')+
+      `<div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div>`+
+      `<div class="sfi-stats">HP: ${f.currentHp??f.stats?.hp}/${f.stats?.hp} | ATK:${f.stats?.atk} SPD:${f.stats?.spd}</div>`+
+      `<div class="sfi-stats" style="color:var(--gold);">⚡ ${getFeralEnergy(f)}/${ENERGY_MAX} energy</div></div>`+
+      `<span class="rarity-badge ${getRarityClass(f.rarity)}">${f.rarity.toUpperCase()}</span>`;
+    div.addEventListener('click',()=>{
+      const energy=getFeralEnergy(f);
+      if(energy<=0){ showNotif(`⚡ ${getFeralDisplayName(f)} has no energy! Refills in ${energyRefillsIn(f)}min`,'var(--red)'); return; }
+      searchForBattle(f.id);
+    });
+    list.appendChild(div);
+  });
+}
+
+window.searchForBattle = function(feralId) {
+  selectedBattleFeral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!selectedBattleFeral) return;
+  const enemyKey=getRandomWildFeralKey(), enemyBase=FERALS_DATA[enemyKey], enemyShiny=rollShiny();
+  previewEnemy={ feralId:enemyKey,name:enemyBase.name,sprite:enemyKey,rarity:enemyBase.rarity,type:enemyBase.type||'earth',shiny:enemyShiny,
+    hp:enemyBase.baseStats.hp+rollRange(-5,5),maxHp:0,atk:enemyBase.baseStats.atk+rollRange(-3,3),
+    def:enemyBase.baseStats.def+rollRange(-3,3),spd:enemyBase.baseStats.spd+rollRange(-3,3),
+    sp:0,basicAttack:enemyBase.basicAttack,specialAttack:enemyBase.specialAttack,ability:enemyBase.ability,
+    poisoned:false,bleeding:false,paralyzed:false,burned:false };
+  previewEnemy.maxHp=previewEnemy.hp;
+  document.getElementById('battleStep1').style.display='none';
+  document.getElementById('battleStep2').style.display='block';
+  const shinyLabel=enemyShiny==='both'?'🌟 ULTRA':enemyShiny!=='none'?'✨ SHINY':'';
+  document.getElementById('battlePreview').innerHTML=
+    '<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:12px;">OPPONENT FOUND!</div>'+
+    '<div class="battle-preview-fighters">'+
+      `<div class="battle-preview-fighter">${feralSpriteHTML(selectedBattleFeral.feralId||selectedBattleFeral.id,selectedBattleFeral.shiny||'none','48px')}<div class="battle-preview-name">${getFeralDisplayName(selectedBattleFeral)}</div><div class="battle-preview-stats">HP:${selectedBattleFeral.currentHp??selectedBattleFeral.stats?.hp} ATK:${selectedBattleFeral.stats?.atk}</div></div>`+
+      '<div style="font-family:var(--pixel);font-size:12px;color:var(--border);">VS</div>'+
+      `<div class="battle-preview-fighter">${feralSpriteHTML(previewEnemy.feralId,previewEnemy.shiny,'48px')}<div class="battle-preview-name">${previewEnemy.name} ${shinyLabel}</div><div class="battle-preview-stats">HP:${previewEnemy.hp} ATK:${previewEnemy.atk}</div><span class="rarity-badge ${getRarityClass(previewEnemy.rarity)}" style="display:inline-block;margin-top:4px;">${previewEnemy.rarity.toUpperCase()}</span></div>`+
+    '</div>'+
+    `<div style="font-size:15px;color:var(--text2);">Ability: ⚡ ${previewEnemy.ability?.name||'???'}</div>`;
+};
+
+window.confirmFight  = function() { if(!selectedBattleFeral||!previewEnemy) return; startBattle(selectedBattleFeral.id,false,previewEnemy); };
+window.fleePreview   = function() { playerData.shards=Math.max(0,(playerData.shards||0)-5); savePlayerData(); updateTopbar(); showNotif('🏃 Fled before battle! -5 Shards','var(--text2)'); renderBattleSelect(); };
+
+window.startBattle = function(feralId, isDungeon, enemyOverride) {
+  if(isDungeon===undefined) isDungeon=false;
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  // Deduct energy for non-dungeon battles
+  if(!isDungeon) {
+    const feralIdx=(playerData.ferals||[]).findIndex(f=>f.id===feralId);
+    if(feralIdx!==-1){
+      updateFeralEnergy(playerData.ferals[feralIdx]);
+      if(playerData.ferals[feralIdx].energy<=0){ showNotif(`⚡ No energy! Refills in ${energyRefillsIn(playerData.ferals[feralIdx])}min`,'var(--red)'); renderBattleSelect(); return; }
+      playerData.ferals[feralIdx].energy-=1;
+      playerData.ferals[feralIdx].lastEnergyUpdate=playerData.ferals[feralIdx].lastEnergyUpdate||Date.now();
+      savePlayerData();
+    }
+  }
+  if(isDungeon&&!dungeonState) dungeonState={feralId,currentRoom:0};
+  document.getElementById('battleContent').style.display='none';
+  document.getElementById('battleArena').style.display='flex';
+  document.getElementById('battleArena').style.flexDirection='column';
+  document.getElementById('battleResultArea').style.display='none';
+  document.getElementById('tameSection').style.display='none';
+  document.getElementById('dungeonNextBtn').style.display='none';
+  let enemy;
+  if(enemyOverride){ enemy={...enemyOverride,poisoned:false,bleeding:false,paralyzed:false,burned:false}; if(!enemy.maxHp) enemy.maxHp=enemy.hp; }
+  else {
+    const enemyKey=getRandomWildFeralKey(), enemyBase=FERALS_DATA[enemyKey], enemyShiny=rollShiny();
+    enemy={feralId:enemyKey,name:enemyBase.name,sprite:enemyKey,rarity:enemyBase.rarity,type:enemyBase.type||'earth',shiny:enemyShiny,
+      hp:enemyBase.baseStats.hp+rollRange(-5,5),maxHp:0,atk:enemyBase.baseStats.atk+rollRange(-3,3),
+      def:enemyBase.baseStats.def+rollRange(-3,3),spd:enemyBase.baseStats.spd+rollRange(-3,3),sp:0,
+      basicAttack:enemyBase.basicAttack,specialAttack:enemyBase.specialAttack,ability:enemyBase.ability,
+      poisoned:false,bleeding:false,paralyzed:false,burned:false};
+    enemy.maxHp=enemy.hp;
+  }
+  currentBattleEnemy=enemy;
+  const night=isNighttime();
+  let pAtk=getStatWithItems(feral,'atk'), pDef=getStatWithItems(feral,'def'), pSpd=getStatWithItems(feral,'spd'), pHp=feral.currentHp??feral.stats.hp;
+  if(feral.feralId==='lunnis'&&night){ pAtk=Math.round(pAtk*1.25); pDef=Math.round(pDef*1.25); pSpd=Math.round(pSpd*1.25); }
+  battleState={
+    player:{feral,hp:pHp,maxHp:feral.stats.hp,sp:0,atk:pAtk,def:pDef,spd:pSpd,
+      ironhide:feral.feralId==='embrak'?5:0, shadowstep:feral.feralId==='duskfang'?0.2:0,
+      riftserpent:feral.feralId==='riftserpent'?0.35:0, stone:feral.stone?findItem(feral.stone):null,
+      poisoned:false,bleeding:false,paralyzed:false,burned:false,
+      ashenwingRevived:false,nebulodonCount:0,hexcoonRecoil:feral.feralId==='hexcoon'},
+    enemy,isDungeon,finished:false,
+  };
+  if(enemy.feralId==='abysselk'){ battleState.player.atk=Math.round(battleState.player.atk*0.8); addLog('🌊 Bioluminance! Your ATK reduced by 20%!','log-ability'); }
+  if(enemy.feralId==='sylvix'&&Math.random()<0.4){ battleState.player.atk=Math.max(1,battleState.player.atk-3); addLog('🦊 Pilferer! Sylvix steals your focus!','log-ability'); }
+  updateBattleUI();
+  document.getElementById('battleLog').innerHTML='';
+  addLog(`⚔️ A wild ${enemy.name} appears!`,'log-info');
+  if((enemy.shiny||'none')!=='none') addLog(`${enemy.shiny==='both'?'🌟 ULTRA SHINY':'✨ Shiny'} ${enemy.name}!`,'log-ability');
+  if(night&&feral.feralId==='lunnis') addLog('🌙 Moonblessed activated!','log-ability');
+  if(feral.feralId==='sylvix'&&Math.random()<0.4){ enemy.atk=Math.max(1,enemy.atk-3); addLog('🦊 Pilferer! Sylvix steals enemy focus!','log-ability'); }
+  runBattleTick();
+};
+
+function addLog(msg,cls='') {
+  const log=document.getElementById('battleLog');
+  const entry=document.createElement('div'); entry.className=`log-entry ${cls}`; entry.textContent=msg;
+  log.appendChild(entry); log.scrollTop=log.scrollHeight;
+}
+
+function updateBattleUI() {
+  if(!battleState) return;
+  const {player,enemy}=battleState;
+  const pHpPct=Math.max(0,Math.round((player.hp/player.maxHp)*100));
+  const eHpPct=Math.max(0,Math.round((enemy.hp/enemy.maxHp)*100));
+  document.getElementById('playerSprite').innerHTML=feralSpriteHTML(player.feral.feralId||player.feral.id,player.feral.shiny||'none','48px');
+  document.getElementById('playerFighterName').textContent=getFeralDisplayName(player.feral);
+  document.getElementById('playerHPText').textContent=`${Math.max(0,Math.round(player.hp))}/${player.maxHp}`;
+  document.getElementById('playerHPBar').style.cssText=`width:${pHpPct}%;background:${pHpPct>50?'var(--green)':pHpPct>25?'var(--gold)':'var(--red)'};`;
+  document.getElementById('playerSPText').textContent=`${Math.round(player.sp)}/100`;
+  document.getElementById('playerSPBar').style.width=Math.min(100,player.sp)+'%';
+  document.getElementById('enemySprite').innerHTML=feralSpriteHTML(enemy.feralId||enemy.sprite,enemy.shiny||'none','48px');
+  document.getElementById('enemyFighterName').textContent=enemy.name;
+  document.getElementById('enemyHPText').textContent=`${Math.max(0,Math.round(enemy.hp))}/${enemy.maxHp}`;
+  document.getElementById('enemyHPBar').style.width=eHpPct+'%';
+  document.getElementById('enemySPBar').style.width=Math.min(100,enemy.sp)+'%';
+}
+
+function runBattleTick() {
+  if(battleInterval) clearInterval(battleInterval);
+  let playerCharge=0, enemyCharge=0, statusCharge=0;
+  battleInterval=setInterval(()=>{
+    if(!battleState||battleState.finished) return;
+    const {player,enemy}=battleState;
+    playerCharge+=player.spd*0.5; enemyCharge+=enemy.spd*0.5; statusCharge+=1;
+    if(playerCharge>=100){ playerCharge-=100; playerAttacks(); }
+    if(!battleState.finished&&enemyCharge>=100){ enemyCharge-=100; enemyAttacks(); }
+    if(player.feral.feralId==='tempus'&&Math.random()<0.25&&!battleState.finished){ addLog('⏰ Timestep! Tempus acts again!','log-ability'); playerAttacks(); }
+    if(enemy.feralId==='tempus'&&Math.random()<0.25&&!battleState.finished){ addLog('⏰ Timestep! Enemy Tempus acts again!','log-ability'); enemyAttacks(); }
+    if(statusCharge>=12){
+      statusCharge=0;
+      if(player.poisoned&&!battleState.finished){ player.hp-=3; addLog(`☠️ ${getFeralDisplayName(player.feral)} is poisoned! -3HP`,'log-hit'); }
+      if(player.bleeding&&!battleState.finished){ player.hp-=4; addLog(`🩸 ${getFeralDisplayName(player.feral)} bleeds! -4HP`,'log-hit'); }
+      if(player.burned&&!battleState.finished){ player.hp-=2; addLog(`🔥 ${getFeralDisplayName(player.feral)} burns! -2HP`,'log-hit'); }
+      if(enemy.poisoned&&!battleState.finished){ enemy.hp-=3; addLog(`☠️ ${enemy.name} is poisoned! -3HP`,'log-hit'); }
+      if(enemy.bleeding&&!battleState.finished){ enemy.hp-=4; addLog(`🩸 ${enemy.name} bleeds! -4HP`,'log-hit'); }
+      if(enemy.burned&&!battleState.finished){ enemy.hp-=2; addLog(`🔥 ${enemy.name} burns! -2HP`,'log-hit'); }
+      if(player.feral.feralId==='cindermane'&&!battleState.finished){ enemy.hp-=2; addLog('🔥 Emberstride burns the ground! -2HP','log-ability'); }
+      if(player.feral.feralId==='mossfin'&&!battleState.finished){ player.hp=Math.min(player.maxHp,player.hp+2); addLog('🌿 Overgrowth! +2HP','log-ability'); }
+      if(player.hexcoonRecoil&&!battleState.finished){ player.hp-=5; addLog('⚙️ Overclock recoil! -5HP','log-hit'); }
+    }
+    updateBattleUI();
+    if(player.hp<=0||enemy.hp<=0){ clearInterval(battleInterval); battleState.finished=true; setTimeout(finishBattle,800); }
+  },100);
+}
+
+function playerAttacks() {
+  const {player,enemy}=battleState;
+  if(player.paralyzed&&Math.random()<0.3){ addLog(`⚡ ${getFeralDisplayName(player.feral)} is paralyzed!`,'log-ability'); return; }
+  if(player.riftserpent>0&&Math.random()<0.35){ addLog('🌀 Dimensional Slip! Riftserpent phases out!','log-ability'); return; }
+  player.sp=Math.min(100,player.sp+rollRange(15,25));
+  const isSpecial=player.sp>=100; if(isSpecial) player.sp=0;
+  let dmg=rollRange(player.atk-3,player.atk+5);
+  let reduction=Math.max(0,enemy.def*0.3)+player.ironhide;
+  if(enemy.feralId==='galehawk') reduction+=dmg*0.2;
+  const stone=player.stone;
+  if(stone?.effect==='void') reduction=Math.max(0,reduction*0.7);
+  if(player.feral.feralId==='puffalo'&&Math.random()<0.15){ dmg=Math.max(1,Math.round(dmg*0.5)); addLog('💨 Puff Guard! Damage reduced!','log-ability'); }
+  if(player.feral.feralId==='mudillo'){ battleState.player.def+=1; addLog('🟤 Mud Coat! DEF rose!','log-ability'); }
+  dmg=Math.max(1,Math.round(dmg-reduction));
+  const typeMult=getTypeMultiplier(player.feral.type,enemy.type);
+  if(typeMult>1){ dmg=Math.round(dmg*typeMult); addLog('⚡ Type advantage!','log-ability'); }
+  if(stone){
+    if(stone.effect==='recoil')  { dmg=Math.round(dmg*1.5); player.hp-=Math.round(dmg*0.15); addLog(`💥 Recoil! -${Math.round(dmg*0.15)}HP`,'log-hit'); }
+    if(stone.effect==='lifesteal'){ const h=Math.round(dmg*0.2); player.hp=Math.min(player.maxHp,player.hp+h); addLog(`🩸 Lifesteal +${h}HP!`,'log-ability'); }
+    if(stone.effect==='burn'     &&Math.random()<0.30){ enemy.burned=true;    addLog(`🔥 ${enemy.name} is burned!`,'log-ability'); }
+    if(stone.effect==='paralyze' &&Math.random()<0.25){ enemy.paralyzed=true; addLog(`⚡ ${enemy.name} is paralyzed!`,'log-ability'); }
+    if(stone.effect==='freeze'   &&Math.random()<0.15){ enemy.paralyzed=true; addLog(`❄️ ${enemy.name} is frozen!`,'log-ability'); }
+    if(stone.effect==='double'   &&Math.random()<0.10){ dmg*=2; addLog('✌️ Twinstone double hit!','log-ability'); }
+    if(stone.effect==='reflect')  { const r=Math.round(dmg*0.15); player.hp=Math.min(player.maxHp,player.hp+r); }
+    if(stone.effect==='choice')   { dmg=Math.round(dmg*1.3); }
+    if(stone.effect==='poison'   &&Math.random()<0.30){ enemy.poisoned=true;  addLog(`☠️ Poisonstone! ${enemy.name} is poisoned!`,'log-ability'); }
+    if(stone.effect==='bleed'    &&Math.random()<0.30){ enemy.bleeding=true;  addLog(`🩸 Bleedstone! ${enemy.name} is bleeding!`,'log-ability'); }
+    if(stone.effect==='rage')     { const rageBonus=Math.round((player.maxHp-player.hp)*0.08); dmg+=rageBonus; if(rageBonus>0) addLog(`😤 Ragestone! +${rageBonus} damage!`,'log-ability'); }
+    if(stone.effect==='thorns')   { const t=Math.round(dmg*0.2); enemy.hp-=t; addLog(`🌵 Thornstone! ${t} reflected!`,'log-ability'); }
+    if(stone.effect==='swift')    { dmg=Math.round(dmg*1.2); }
+    if(stone.effect==='iron')     { player.hp=Math.min(player.maxHp,player.hp+3); addLog('🛡️ Ironstone absorbs! +3HP','log-ability'); }
+    if(stone.effect==='drain')    { enemy.sp=Math.max(0,(enemy.sp||0)-5); addLog('🌀 Drainstone drained enemy SP!','log-ability'); }
+    if(stone.effect==='berserk')  { dmg=Math.round(dmg*1.4); battleState.player._berserkPenalty=true; addLog('💢 Berserkstone! Massive hit!','log-ability'); }
+    if(stone.effect==='null')     { player.poisoned=false; player.bleeding=false; player.burned=false; player.paralyzed=false; }
+    if(stone.effect==='crown')    { dmg=Math.round(dmg*1.15); }
+  }
+  // Feral offensive abilities
+  if(player.feral.feralId==='nebulodon'){ battleState.player.nebulodonCount=(battleState.player.nebulodonCount||0)+1; if(battleState.player.nebulodonCount%3===0){ dmg*=2; addLog('🌌 Cosmic Crush! Double damage!','log-ability'); } }
+  if(player.feral.feralId==='detonax'&&isSpecial&&Math.random()<0.4){ dmg=Math.round(dmg*1.5); addLog('💣 BOMB CLAWS EXPLODE!','log-ability'); }
+  if(player.feral.feralId==='singeet'  &&Math.random()<0.20){ dmg+=4; addLog('🔥 Hot Feet! Singeet strikes fast!','log-ability'); }
+  if(player.feral.feralId==='scorchling'&&Math.random()<0.25){ dmg+=5; addLog('🔥 Flickerflame burns hotter!','log-ability'); }
+  if(player.feral.feralId==='flarelynx'&&Math.random()<0.25){ dmg=Math.round(dmg*1.25); addLog('🔥 Heat Pounce!','log-ability'); }
+  if(player.feral.feralId==='blazehart'&&isSpecial){ dmg=Math.round(dmg*1.3); addLog('🔥 Burning Antlers blaze!','log-ability'); }
+  if(player.feral.feralId==='solgriff' &&Math.random()<0.25){ dmg+=6; addLog('☀️ Suncrest empowers the hit!','log-ability'); }
+  if(player.feral.feralId==='stormkraken'&&Math.random()<0.25){ enemy.paralyzed=true; addLog('⚡ Storm Tentacles paralyze the enemy!','log-ability'); }
+  if(player.feral.feralId==='ecliptor' &&Math.random()<0.30){ dmg=Math.round(dmg*1.25); addLog('🌘 Eclipse Aura twists the battle!','log-ability'); }
+  if(player.feral.feralId==='solaryn'  &&Math.random()<0.25){ dmg=Math.round(dmg*1.3);  addLog('☀️ Sunfire flares!','log-ability'); }
+  if(player.feral.feralId==='voltiki'){ player.voltikiCharge=(player.voltikiCharge||0)+1; if(player.voltikiCharge>=3){ player.voltikiCharge=0; dmg=Math.round(dmg*1.35); addLog('⚡ Charge Tail! Voltiki releases stored power!','log-ability'); } }
+  if(player.feral.feralId==='riptide'){ player.riptideStacks=Math.min(6,(player.riptideStacks||0)+1); dmg+=player.riptideStacks; addLog(`🌊 Surging Current! +${player.riptideStacks} damage!`,'log-ability'); }
+  if(player.feral.feralId==='ironmaw'){ dmg=Math.round(dmg*1.15); addLog('🪨 Crag Jaw! Ironmaw crushes through armor!','log-ability'); }
+  if(player.feral.feralId==='astrael'&&Math.random()<0.25){ dmg=Math.round(dmg*1.25); player.hp=Math.min(player.maxHp,player.hp+4); addLog('✨ Starbound! +4HP!','log-ability'); }
+  if(player.feral.feralId==='snipsnap'&&Math.random()<0.10){ dmg*=2; addLog(`✂️ Quick Snip! Strikes twice!`,'log-ability'); }
+  if(player.feral.feralId==='lumipup' &&Math.random()<0.25){ player.hp=Math.min(player.maxHp,player.hp+4); addLog('✨ Glowheart restored +4HP!','log-ability'); }
+  if(player.feral.feralId==='grimelk' &&Math.random()<0.20){ enemy.atk=Math.max(1,enemy.atk-2); addLog('🌑 Dread Stare lowered enemy ATK!','log-ability'); }
+  if(player.feral.feralId==='kelpcat' &&Math.random()<0.25){ enemy.spd=Math.max(1,enemy.spd-2); addLog('🌿 Kelp Snare slowed the enemy!','log-ability'); }
+  if(player.feral.feralId==='tsunamole'){ player.tsunamoleStacks=Math.min(6,(player.tsunamoleStacks||0)+1); dmg+=player.tsunamoleStacks; addLog(`🌊 Waveback builds! +${player.tsunamoleStacks} damage!`,'log-ability'); }
+  if(player.feral.feralId==='frostgulp'){ player.frostgulpStacks=(player.frostgulpStacks||0)+1; if(player.frostgulpStacks>=3){ player.frostgulpStacks=0; dmg+=10; enemy.paralyzed=true; addLog('❄️ Ice Pouch burst! +10 damage and freeze!','log-ability'); } }
+  if(player.feral.feralId==='emberdrake'){ player.emberdrakeStacks=Math.min(5,(player.emberdrakeStacks||0)+1); dmg+=player.emberdrakeStacks; addLog(`🐉 Warmblood grows! +${player.emberdrakeStacks} damage!`,'log-ability'); }
+  if(player.feral.feralId==='moonreign'&&Math.random()<0.25){ dmg=Math.round(dmg*1.25); addLog('🌙 Crescent Crown empowered the attack!','log-ability'); }
+  enemy.hp-=dmg;
+  addLog(`${isSpecial?'✨':'⚔️'} ${getFeralDisplayName(player.feral)} used ${isSpecial?player.feral.specialAttack:player.feral.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
+  if(isSpecial) soundSpecial(); else soundHit();
+  animateFighter('playerFighter',true); animateFighter('enemyFighter',false,true);
+}
+
+function enemyAttacks() {
+  const {player,enemy}=battleState;
+  if(enemy.paralyzed&&Math.random()<0.3) return;
+  enemy.sp=Math.min(100,enemy.sp+rollRange(15,25));
+  const isSpecial=enemy.sp>=100; if(isSpecial) enemy.sp=0;
+  // Dodge abilities
+  if(player.feral.feralId==='duskfang'    &&Math.random()<0.20){ addLog('💨 Shadowstep! Duskfang dodged!','log-ability'); return; }
+  if(player.feral.feralId==='dustmaw'     &&Math.random()<0.15){ addLog('🌫️ Sandcloak! Dustmaw dodged!','log-ability'); return; }
+  if(player.feral.feralId==='glowtail'   &&Math.random()<0.25){ addLog('🌌 Auroraveil negated the attack!','log-ability'); return; }
+  if(player.feral.feralId==='riftserpent'&&Math.random()<0.35){ addLog('🌀 Dimensional Slip! Riftserpent phased out!','log-ability'); return; }
+  if(player.feral.feralId==='starclaw'   &&Math.random()<0.25){ addLog('⭐ Celestial Map evaded the attack!','log-ability'); return; }
+  if(player.feral.feralId==='burrowl'    &&Math.random()<0.15){ addLog('🦉 Tunnel Sense! Burrowl ducked underground!','log-ability'); return; }
+  if(player.feral.feralId==='glimmeray'  &&Math.random()<0.18){ addLog('✨ Light Drift! Glimmeray slipped away!','log-ability'); return; }
+  if(player.feral.feralId==='moonclaw'   &&Math.random()<0.22){ addLog('🌙 Crescent Prowl! Moonclaw vanished!','log-ability'); return; }
+  if(player.feral.feralId==='abyssmoth'  &&Math.random()<0.25){ addLog('🌑 Void Wings! Abyssmoth flickered away!','log-ability'); return; }
+  if(player.feral.feralId==='dustwing'   &&Math.random()<0.18){ addLog('🌪️ Dust Drift! Dustwing vanished!','log-ability'); return; }
+  if(player.feral.feralId==='glintbug'   &&Math.random()<0.15){ addLog('✨ Flicker! Glintbug dodged!','log-ability'); return; }
+  let dmg=rollRange(enemy.atk-3,enemy.atk+5);
+  let reduction=Math.max(0,player.def*0.3)+player.ironhide;
+  if(player.feral.feralId==='galehawk') reduction+=dmg*0.2;
+  if(player.feral.feralId==='pebblox'&&player.hp<player.maxHp*0.3) dmg=Math.round(dmg*0.5);
+  if(player.feral.feralId==='bramblehog'){ dmg=Math.max(1,Math.round(dmg*0.85)); addLog('🌿 Rooted Hide! Damage reduced!','log-ability'); }
+  if(player.feral.feralId==='drizzlefin'&&Math.random()<0.20){ dmg=Math.max(1,Math.round(dmg*0.8)); addLog('🌧️ Raincoat softened the hit!','log-ability'); }
+  if(player.feral.feralId==='grubrock'){ dmg=Math.max(1,Math.round(dmg*0.9)); addLog('🪨 Stone Belly reduced damage!','log-ability'); }
+  if(player.feral.feralId==='marshhorn'&&Math.random()<0.25){ enemy.spd=Math.max(1,enemy.spd-1); addLog('🌊 Bogstep slowed the enemy!','log-ability'); }
+  if(player.feral.feralId==='gravemole'){ dmg=Math.max(1,Math.round(dmg*0.9)); addLog('⚰️ Grave Dirt toughened Gravemole!','log-ability'); }
+  if(player.feral.feralId==='terrapinch'){ dmg=Math.max(1,Math.round(dmg*0.85)); addLog('🐢 Shell Clamp reduced damage!','log-ability'); }
+  if(player.feral.feralId==='smoldursa'&&Math.random()<0.25){ dmg=Math.max(1,Math.round(dmg*0.75)); addLog('🐻 Smoke Coat blurred the hit!','log-ability'); }
+  if(player.feral.feralId==='shardillo'&&Math.random()<0.30){ enemy.hp-=4; addLog('💎 Crystal Shell cut the enemy! -4HP','log-ability'); }
+  if(player.feral.feralId==='crystox'){ dmg=Math.max(1,Math.round(dmg*0.8)); addLog('💎 Prism Horns deflected the blow!','log-ability'); }
+  if(player.feral.feralId==='primordra'){ dmg=Math.max(1,Math.round(dmg*0.75)); addLog('🌍 Worldback endured the hit!','log-ability'); }
+  dmg=Math.max(1,Math.round(dmg-reduction));
+  const typeMult=getTypeMultiplier(enemy.type,player.feral.type);
+  if(typeMult>1){ dmg=Math.round(dmg*typeMult); addLog('⚡ Enemy type advantage!','log-ability'); }
+  // Counter / on-hit abilities
+  if(player.feral.feralId==='coralwing' &&Math.random()<0.40){ enemy.poisoned=true;  addLog(`🐚 Venomshell! ${enemy.name} is poisoned!`,'log-ability'); }
+  if(player.feral.feralId==='thornback' &&Math.random()<0.40){ enemy.bleeding=true;  addLog(`🌿 Briarplate! ${enemy.name} bleeds!`,'log-ability'); }
+  if(player.feral.feralId==='embertoad' &&Math.random()<0.50){ enemy.burned=true;    addLog(`🐸 Lavacoat! ${enemy.name} burns!`,'log-ability'); }
+  if(player.feral.feralId==='mirewing'  &&Math.random()<0.30){ const ref=Math.round(dmg*0.3); enemy.hp-=ref; addLog(`🪞 Reflection! ${ref} reflected!`,'log-ability'); }
+  if(player.feral.feralId==='snarlpup'  &&Math.random()<0.30){ enemy.hp-=3; addLog(`🌿 Briar Coat! ${enemy.name} -3HP!`,'log-ability'); }
+  if(player.feral.feralId==='cluckle'   &&Math.random()<0.25){ enemy.paralyzed=true; addLog(`⚡ Static Feathers! ${enemy.name} paralyzed!`,'log-ability'); }
+  if(player.feral.feralId==='wisprat'   &&Math.random()<0.20){ enemy.burned=true;    addLog(`🔥 Tailflame! ${enemy.name} burned!`,'log-ability'); }
+  if(player.feral.feralId==='obsidianx' &&Math.random()<0.30){ enemy.hp-=5; enemy.burned=true; addLog('🌋 Lava Cracks burned the enemy! -5HP','log-ability'); }
+  if(player.feral.feralId==='thornwyrm' &&Math.random()<0.35){ enemy.hp-=5; addLog('🌿 Living Thorns stabbed the enemy! -5HP','log-ability'); }
+  if(enemy.feralId==='vexcrow'&&Math.random()<0.25){ const bolt=rollRange(8,15); player.hp-=bolt; addLog(`⚡ Stormcall strikes! -${bolt}HP`,'log-ability'); }
+  // Stone effects on incoming
+  const stone=player.stone;
+  if(stone?.effect==='berserk'&&battleState.player._berserkPenalty) dmg=Math.round(dmg*1.1);
+  if(stone?.effect==='null'){ player.poisoned=false; player.bleeding=false; player.burned=false; player.paralyzed=false; }
+  if(stone?.effect==='crown') dmg=Math.max(1,Math.round(dmg*0.85));
+  if(stone?.effect==='iron')  dmg=Math.max(1,dmg-3);
+  player.hp-=dmg;
+  if(player.feral.feralId==='ashenwing'&&player.hp<=0&&!battleState.player.ashenwingRevived){ battleState.player.ashenwingRevived=true; player.hp=Math.round(player.maxHp*0.15); addLog('🔥 Rebirth! Ashenwing survives!','log-ability'); }
+  addLog(`${isSpecial?'✨':'🔴'} ${enemy.name} used ${isSpecial?enemy.specialAttack:enemy.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
+  if(isSpecial) soundSpecial(); else soundHit();
+  animateFighter('enemyFighter',true); animateFighter('playerFighter',false,true);
+}
+
+function animateFighter(id,isAttacking,isHurt=false){
+  const el=document.getElementById(id); if(!el) return;
+  el.classList.remove('attacking','attacking-right','hurt'); void el.offsetWidth;
+  if(isAttacking) el.classList.add(id==='playerFighter'?'attacking':'attacking-right');
+  else if(isHurt) el.classList.add('hurt');
+}
+
+async function finishBattle() {
+  if(!battleState) return;
+  const {player,enemy,isDungeon}=battleState;
+  const won=enemy.hp<=0;
+  document.getElementById('battleControls').style.display='none';
+  document.getElementById('battleResultArea').style.display='block';
+  const resultDiv=document.getElementById('battleResult');
+  if(won) {
+    const lootRoll=Math.random()*100;
+    const allItems=[...ITEMS_DATA.trinkets,...ITEMS_DATA.essences,...ITEMS_DATA.stones];
+    let loot=null;
+    if(lootRoll<25){ const c=allItems.filter(i=>i.rarity==='common');   loot=c[Math.floor(Math.random()*c.length)]; }
+    else if(lootRoll<38){ const c=allItems.filter(i=>i.rarity==='uncommon'); loot=c[Math.floor(Math.random()*c.length)]; }
+    else if(lootRoll<45){ const c=allItems.filter(i=>i.rarity==='rare');   loot=c[Math.floor(Math.random()*c.length)]; }
+    else if(lootRoll<48){ const c=allItems.filter(i=>i.rarity==='epic'||i.rarity==='legendary'); loot=c[Math.floor(Math.random()*c.length)]; }
+    const shardReward=isDungeon?rollRange(15,30):rollRange(1,10);
+    playerData.shards=(playerData.shards||0)+shardReward;
+    playerData.tamerXp=(playerData.tamerXp||0)+20;
+    playerData.totalShards=(playerData.totalShards||0)+shardReward;
+    checkTamerLevelUp();
+    if(loot) playerData.inventory=[...(playerData.inventory||[]),{itemId:loot.id,obtained:Date.now()}];
+    const idx=(playerData.ferals||[]).findIndex(f=>f.id===player.feral.id);
+    if(idx!==-1){ playerData.ferals[idx].currentHp=Math.max(1,player.hp); playerData.ferals[idx].wins=(playerData.ferals[idx].wins||0)+1; playerData.ferals[idx].kills=(playerData.ferals[idx].kills||0)+1; }
+    await savePlayerData(); updateTopbar();
+    const tameChance=Math.max(5,Math.min(90,50+(playerData.tamerLevel||1)*3-({common:0,uncommon:5,rare:12,epic:20,legendary:35}[enemy.rarity||'common']||0)+Math.round((1-Math.max(0,enemy.hp/enemy.maxHp))*40)));
+    soundVictory();
+    if(isDungeon&&dungeonState){ dungeonState.currentRoom++; if(dungeonState.currentRoom>=3) setTimeout(openDungeonChest,800); else { const nb=document.getElementById('dungeonNextBtn'); if(nb) nb.style.display='block'; } }
+    resultDiv.innerHTML=`
+      <div style="color:var(--green);font-family:var(--pixel);font-size:10px;margin-bottom:12px;">🏆 VICTORY!</div>
+      <div style="font-size:18px;color:var(--text2);margin-bottom:12px;">${getFeralDisplayName(player.feral)} defeated ${enemy.name}!</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:12px;"><span style="color:var(--gold);">+${shardReward} 💎</span><span style="color:var(--accent2);">+20 XP</span></div>
+      ${loot?`<div class="loot-item"><span style="font-size:24px;">${loot.icon}</span><div><div style="font-family:var(--pixel);font-size:8px;">${loot.name}</div><div style="color:var(--text2);font-size:15px;">${loot.desc}</div></div></div>`:'<div style="color:var(--text2);font-size:16px;">No item dropped.</div>'}`;
+    if((playerData.ferals||[]).filter(f=>f.alive!==false).length<100){
+      document.getElementById('tameSection').style.display='block';
+      document.getElementById('tameChanceText').textContent=`TAME CHANCE: ${tameChance}%`;
+      window._tameChance=tameChance;
+    }
+  } else {
+    const idx=(playerData.ferals||[]).findIndex(f=>f.id===player.feral.id);
+    if(idx!==-1){ playerData.ferals[idx].alive=false; playerData.ferals[idx].currentHp=0; }
+    await savePlayerData(); renderRoster(); soundDefeat();
+    resultDiv.innerHTML=`<div style="color:var(--red);font-family:var(--pixel);font-size:10px;margin-bottom:12px;">💀 DEFEATED</div>
+      <div style="font-size:20px;color:var(--text);">${getFeralDisplayName(player.feral)} has fallen.</div>
+      <div style="font-size:17px;color:var(--text2);margin-top:8px;font-style:italic;">"${randomFrom(DEATH_MESSAGES)}"</div>`;
+    document.getElementById('playerFighter').classList.add('defeated');
+  }
+}
+
+window.attemptTame = async function() {
+  if(!currentBattleEnemy) return;
+  const success=Math.random()*100<(window._tameChance||30);
+  document.getElementById('tameSection').style.display='none';
+  if(success){
+    const newFeral=generateFeralInstance(currentBattleEnemy.feralId,currentBattleEnemy.shiny);
+    newFeral.currentHp=Math.max(1,Math.round(newFeral.stats.hp*0.3));
+    playerData.ferals=[...(playerData.ferals||[]),newFeral];
+    playerData.totalCaught=(playerData.totalCaught||0)+1;
+    playerData.dexSeen=playerData.dexSeen||{};
+    playerData.dexSeen[newFeral.feralId]=playerData.dexSeen[newFeral.feralId]||{total:0,glow:false,invert:false,ultra:false};
+    playerData.dexSeen[newFeral.feralId].total++;
+    if(newFeral.shiny==='glow')   playerData.dexSeen[newFeral.feralId].glow=true;
+    if(newFeral.shiny==='invert') playerData.dexSeen[newFeral.feralId].invert=true;
+    if(newFeral.shiny==='both')   playerData.dexSeen[newFeral.feralId].ultra=true;
+    await savePlayerData(); renderRoster(); soundTame();
+    addLog(`🌿 TAMED! ${newFeral.name} joins your team!`,'log-tame');
+    showNotif(`🌿 ${newFeral.name} tamed!`,'var(--green)');
+  } else {
+    addLog(`💨 ${currentBattleEnemy.name} broke free!`,'log-info');
+    showNotif('Taming failed — they escaped!','var(--red)');
+  }
+};
+
+window.fleeBattle = function() {
+  if(!battleState||battleState.finished) return;
+  clearInterval(battleInterval); battleState.finished=true; soundFlee();
+  playerData.shards=Math.max(0,(playerData.shards||0)-5);
+  savePlayerData(); updateTopbar();
+  addLog('🏃 You fled the battle! -5 Shards','log-info');
+  document.getElementById('battleControls').style.display='none';
+  document.getElementById('battleResultArea').style.display='block';
+  document.getElementById('tameSection').style.display='none';
+  document.getElementById('battleResult').innerHTML=`<div style="font-family:var(--pixel);font-size:9px;color:var(--text2);margin-bottom:8px;">🏃 FLED!</div><div style="font-size:17px;color:var(--text2);">You escaped safely.<br><span style="color:var(--red);">-5 Shards</span></div>`;
+};
+
+window.openSwapMenu = function() {
+  if(!battleState||battleState.finished) return;
+  const available=(playerData.ferals||[]).filter(f=>f.alive!==false&&f.id!==battleState.player.feral.id&&(f.currentHp??f.stats?.hp)>0);
+  if(available.length===0){ showNotif('No healthy Ferals to swap in!','var(--red)'); return; }
+  openModal(`<div class="modal-title">🔄 SWAP FERAL</div><p style="text-align:center;color:var(--red);font-size:16px;margin-bottom:12px;">⚠️ Enemy gets a free hit when you swap!</p>
+    ${available.map(f=>`<div class="select-feral-item" onclick="doSwap('${f.id}')">
+      ${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')}
+      <div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div><div class="sfi-stats">HP: ${f.currentHp??f.stats?.hp}/${f.stats?.hp} | ATK:${f.stats?.atk}</div></div>
+      <span class="rarity-badge ${getRarityClass(f.rarity)}">${f.rarity.toUpperCase()}</span>
+    </div>`).join('')}`);
+};
+
+window.doSwap = function(feralId) {
+  closeModal(); if(!battleState||battleState.finished) return;
+  const newFeral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!newFeral) return;
+  const curIdx=(playerData.ferals||[]).findIndex(f=>f.id===battleState.player.feral.id);
+  if(curIdx!==-1) playerData.ferals[curIdx].currentHp=Math.max(0,battleState.player.hp);
+  soundSwap(); addLog(`🔄 ${getFeralDisplayName(newFeral)} swapped in!`,'log-info');
+  const freeDmg=Math.max(1,Math.round(rollRange(battleState.enemy.atk-3,battleState.enemy.atk+3)-newFeral.stats.def*0.3));
+  addLog(`⚡ ${battleState.enemy.name} lands a free hit! -${freeDmg}HP`,'log-hit'); soundHit();
+  const night=isNighttime();
+  let nAtk=getStatWithItems(newFeral,'atk'), nDef=getStatWithItems(newFeral,'def'), nSpd=getStatWithItems(newFeral,'spd');
+  if(newFeral.feralId==='lunnis'&&night){ nAtk=Math.round(nAtk*1.25); nDef=Math.round(nDef*1.25); nSpd=Math.round(nSpd*1.25); }
+  const newHp=Math.max(0,(newFeral.currentHp??newFeral.stats.hp)-freeDmg);
+  battleState.player={feral:newFeral,hp:newHp,maxHp:newFeral.stats.hp,sp:0,atk:nAtk,def:nDef,spd:nSpd,
+    ironhide:newFeral.feralId==='embrak'?6:0, shadowstep:newFeral.feralId==='duskfang'?0.1:0,
+    riftserpent:newFeral.feralId==='riftserpent'?0.15:0, stone:newFeral.stone?findItem(newFeral.stone):null,
+    poisoned:false,bleeding:false,paralyzed:false,burned:false,ashenwingRevived:false,nebulodonCount:0,hexcoonRecoil:newFeral.feralId==='hexcoon'};
+  updateBattleUI();
+  if(newHp<=0){ clearInterval(battleInterval); battleState.finished=true; setTimeout(finishBattle,600); }
+};
+
+window.endBattle = function() {
+  if(battleInterval) clearInterval(battleInterval);
+  battleState=null; currentBattleEnemy=null; dungeonState=null;
+  document.getElementById('battleControls').style.display='flex';
+  document.getElementById('battleContent').style.display='block';
+  document.getElementById('battleArena').style.display='none';
+  renderBattleSelect();
+};
+
+// ===== DUNGEON =====
+window.startDungeon = function() {
+  const alive=(playerData.ferals||[]).filter(f=>f.alive!==false&&(f.currentHp??f.stats?.hp)>0);
+  if(alive.length===0){ showNotif('No Ferals available!','var(--red)'); return; }
+  const rooms=['🌲 Cursed Forest','🕸️ Spider Den','💀 Bone Chamber','🐲 Dragon Lair'];
+  const descs=['Twisted trees hide ancient dangers','Webs everywhere — something watches','The bones of fallen tamers...','The air smells of fire and gold'];
+  openModal(`<div class="modal-title">🏰 DUNGEON</div>
+    <p style="text-align:center;color:var(--text2);font-size:17px;margin-bottom:16px;">Multi-room dungeon — big rewards!<br>Boss at the end drops rare loot.</p>
+    ${rooms.map((r,i)=>`<div style="background:var(--bg3);border:1px solid var(--border);padding:12px;margin-bottom:6px;text-align:center;"><div style="font-family:var(--pixel);font-size:9px;color:var(--gold);">${r}</div><div style="color:var(--text2);font-size:16px;">${descs[i]}</div></div>${i<rooms.length-1?'<div style="text-align:center;color:var(--text2);padding:4px;">↓</div>':''}`).join('')}
+    <p style="text-align:center;color:var(--gold);font-size:17px;margin:12px 0;">Select your Feral:</p>
+    ${alive.map(f=>`<div class="select-feral-item" onclick="closeModal();switchTab('battle');startBattle('${f.id}',true)">${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')}<div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div><div class="sfi-stats">HP: ${f.currentHp??f.stats?.hp}/${f.stats?.hp}</div></div></div>`).join('')}`);
+};
+
+window.openDungeonSwapMenu = function() {
+  if(!battleState||battleState.finished) return;
+  const available=(playerData.ferals||[]).filter(f=>f.alive!==false&&f.id!==battleState.player.feral.id&&(f.currentHp??f.stats?.hp)>0);
+  if(available.length===0){ startNextDungeonRoom(); return; }
+  openModal(`<div class="modal-title">🏰 NEXT ROOM — SWAP?</div>
+    <p style="text-align:center;color:var(--text2);font-size:16px;margin-bottom:12px;">Swap Feral before next room, or continue.</p>
+    <button class="btn btn-gray btn-sm" style="margin-bottom:10px;" onclick="closeModal();startNextDungeonRoom();">➡️ CONTINUE WITH CURRENT</button>
+    ${available.map(f=>`<div class="select-feral-item" onclick="closeModal();doDungeonSwap('${f.id}')">${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')}<div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div><div class="sfi-stats">HP: ${f.currentHp??f.stats?.hp}/${f.stats?.hp} | ATK:${f.stats?.atk}</div></div><span class="rarity-badge ${getRarityClass(f.rarity)}">${f.rarity.toUpperCase()}</span></div>`).join('')}`);
+};
+
+window.doDungeonSwap = function(feralId) {
+  if(!dungeonState) return;
+  if(battleState){ const ci=(playerData.ferals||[]).findIndex(f=>f.id===battleState.player.feral.id); if(ci!==-1) playerData.ferals[ci].currentHp=Math.max(1,Math.round(battleState.player.hp)); }
+  dungeonState.feralId=feralId; startNextDungeonRoom();
+};
+
+function startNextDungeonRoom() {
+  if(!dungeonState) return;
+  const feralId=dungeonState.feralId||(battleState?.player?.feral?.id); if(!feralId) return;
+  if(battleState){ const ci=(playerData.ferals||[]).findIndex(f=>f.id===battleState.player.feral.id); if(ci!==-1) playerData.ferals[ci].currentHp=Math.max(1,Math.round(battleState.player.hp)); savePlayerData(); }
+  const room=dungeonState.currentRoom||0;
+  endBattle();
+  dungeonState={feralId,currentRoom:room};
+  setTimeout(()=>startBattle(feralId,true),150);
+}
+
+window.openDungeonChest = async function() {
+  const rewards=[
+    { icon:'💎', label:'+100 Shards',  action:()=>{ playerData.shards=(playerData.shards||0)+100; } },
+    { icon:'⚗️', label:'Elixir',       action:()=>{ playerData.inventory=[...(playerData.inventory||[]),{itemId:'elixir',obtained:Date.now()}]; } },
+    { icon:'🕯️', label:'Soul Ember',   action:()=>{ playerData.inventory=[...(playerData.inventory||[]),{itemId:'soul_ember',obtained:Date.now()}]; } },
+    { icon:'👑', label:'Hollow Crown', action:()=>{ playerData.inventory=[...(playerData.inventory||[]),{itemId:'hollow_crown',obtained:Date.now()}]; } },
+    { icon:'🌑', label:'Voidstone',    action:()=>{ playerData.inventory=[...(playerData.inventory||[]),{itemId:'voidstone',obtained:Date.now()}]; } },
+  ];
+  const pick=rewards[Math.floor(Math.random()*rewards.length)];
+  pick.action(); playerData.tamerXp=(playerData.tamerXp||0)+50; checkTamerLevelUp();
+  dungeonState=null; await savePlayerData(); updateTopbar();
+  document.getElementById('dungeonNextBtn').style.display='none';
+  openModal(`<div class="modal-title">🏰 DUNGEON COMPLETE!</div><div style="text-align:center;padding:20px 0;"><div style="font-size:56px;">${pick.icon}</div><div style="font-family:var(--pixel);font-size:10px;color:var(--gold);margin:12px 0;">TREASURE CHEST</div><div style="font-size:22px;color:var(--accent2);">${pick.label}</div><div style="color:var(--text2);font-size:16px;margin-top:8px;">+50 Tamer XP</div></div>`);
+};
+
+// ===== PVP =====
+function renderPvP() {
+  const content=document.getElementById('pvpContent');
+  const others=PLAYERS.filter(p=>p.id!==currentPlayer.id);
+  const challenges=playerData.pvpChallenges||[];
+  const incoming=challenges.filter(c=>c.defenderId===currentPlayer.id&&c.status==='pending');
+  const outgoing=challenges.filter(c=>c.challengerId===currentPlayer.id);
+  content.innerHTML=`
+    <div class="section-title" style="margin-bottom:12px;">CHALLENGE A TAMER</div>
+    ${others.map(p=>`<div class="card" style="cursor:pointer;" onclick="openPvPChallenge('${p.id}')"><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:32px;">${p.icon}</span><div><div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);">${p.name}</div><div style="color:var(--text2);font-size:16px;">Tap to challenge</div></div></div></div>`).join('')}
+    ${incoming.length>0?`<div class="section-title" style="margin-top:16px;">⚠️ INCOMING</div>${incoming.map(c=>{ const ch=PLAYERS.find(p=>p.id===c.challengerId); return `<div class="pvp-challenge"><div class="pvp-challenge-header"><span>${ch?.icon} ${ch?.name} challenges you!</span><span class="pvp-result-pending">PENDING</span></div><div style="font-size:16px;color:var(--text2);">${c.challengerFeralName} vs ?</div><div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btn-green btn-sm" onclick="acceptPvP('${c.id}')">ACCEPT</button><button class="btn btn-red btn-sm" onclick="declinePvP('${c.id}')">DECLINE</button></div></div>`; }).join('')}`:''}
+    ${outgoing.length>0?`<div class="section-title" style="margin-top:16px;">SENT</div>${outgoing.map(c=>{ const def=PLAYERS.find(p=>p.id===c.defenderId); const rc=c.status==='won'?'pvp-result-win':c.status==='lost'?'pvp-result-loss':'pvp-result-pending'; const rt=c.status==='won'?'🏆 WON':c.status==='lost'?'💀 LOST':'⏳ WAITING'; return `<div class="pvp-challenge"><div class="pvp-challenge-header"><span>vs ${def?.icon} ${def?.name}</span><span class="${rc}">${rt}</span></div><div style="font-size:16px;color:var(--text2);">${c.challengerFeralName} vs ${c.defenderFeralName||'?'}</div>${c.status!=='pending'?`<div style="font-size:15px;color:var(--text2);margin-top:4px;">${c.resultMsg||''}</div>`:''}</div>`; }).join('')}`:''}`;
+}
+
+window.openPvPChallenge = function(targetId) {
+  const alive=(playerData.ferals||[]).filter(f=>f.alive!==false&&(f.currentHp??f.stats?.hp)>0);
+  if(alive.length===0){ showNotif('No Ferals available!','var(--red)'); return; }
+  const target=PLAYERS.find(p=>p.id===targetId);
+  openModal(`<div class="modal-title">CHALLENGE ${target?.name?.toUpperCase()}</div><p style="text-align:center;color:var(--text2);font-size:17px;margin-bottom:12px;">No permadeath in PvP!</p>
+    ${alive.map(f=>`<div class="select-feral-item" onclick="sendPvPChallenge('${targetId}','${f.id}')">${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')}<div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div><div class="sfi-stats">ATK:${f.stats?.atk} DEF:${f.stats?.def} SPD:${f.stats?.spd}</div></div></div>`).join('')}`);
+};
+
+window.sendPvPChallenge = async function(targetId,feralId) {
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  const challenge={id:'pvp_'+Date.now(),challengerId:currentPlayer.id,challengerFeralId:feralId,challengerFeralName:getFeralDisplayName(feral),challengerFeralSprite:feral.sprite,challengerStats:feral.stats,defenderId:targetId,defenderFeralName:'?',status:'pending',created:Date.now()};
+  playerData.pvpChallenges=[...(playerData.pvpChallenges||[]),challenge];
+  const defSnap=await getDoc(doc(db,'players',targetId));
+  if(defSnap.exists()){ const dd=defSnap.data(); dd.pvpChallenges=[...(dd.pvpChallenges||[]),challenge]; await setDoc(doc(db,'players',targetId),dd); }
+  await savePlayerData(); closeModal(); renderPvP();
+  showNotif(`⚔️ Challenge sent to ${PLAYERS.find(p=>p.id===targetId)?.name}!`);
+};
+
+window.acceptPvP = async function(challengeId) {
+  const alive=(playerData.ferals||[]).filter(f=>f.alive!==false&&(f.currentHp??f.stats?.hp)>0);
+  if(alive.length===0){ showNotif('No Ferals available!','var(--red)'); return; }
+  openModal(`<div class="modal-title">PICK YOUR FIGHTER</div>${alive.map(f=>`<div class="select-feral-item" onclick="resolvePvP('${challengeId}','${f.id}')">${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')}<div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div><div class="sfi-stats">ATK:${f.stats?.atk} DEF:${f.stats?.def} SPD:${f.stats?.spd}</div></div></div>`).join('')}`);
+};
+
+window.resolvePvP = async function(challengeId,defenderFeralId) {
+  const challenge=(playerData.pvpChallenges||[]).find(c=>c.id===challengeId); if(!challenge) return;
+  const defFeral=(playerData.ferals||[]).find(f=>f.id===defenderFeralId); if(!defFeral) return;
+  let cHP=challenge.challengerStats?.hp||60, dHP=defFeral.stats?.hp||60;
+  let cAtk=challenge.challengerStats?.atk||12, dAtk=defFeral.stats?.atk||12;
+  let rounds=0;
+  while(cHP>0&&dHP>0&&rounds<50){ cHP-=Math.max(1,rollRange(dAtk-3,dAtk+3)-2); dHP-=Math.max(1,rollRange(cAtk-3,cAtk+3)-2); rounds++; }
+  const challengerWon=dHP<=0&&cHP>dHP, shards=30;
+  const upd=list=>list.map(c=>c.id!==challengeId?c:{...c,status:challengerWon?'won':'lost',defenderFeralName:getFeralDisplayName(defFeral),resultMsg:`${challengerWon?challenge.challengerFeralName:getFeralDisplayName(defFeral)} won in ${rounds} rounds!`});
+  playerData.pvpChallenges=upd(playerData.pvpChallenges||[]);
+  if(!challengerWon) playerData.shards=(playerData.shards||0)+shards;
+  await savePlayerData();
+  const chalSnap=await getDoc(doc(db,'players',challenge.challengerId));
+  if(chalSnap.exists()){ const cd=chalSnap.data(); cd.pvpChallenges=upd(cd.pvpChallenges||[]); if(challengerWon) cd.shards=(cd.shards||0)+shards; await setDoc(doc(db,'players',challenge.challengerId),cd); }
+  closeModal(); renderPvP(); updateTopbar();
+  showNotif(`🏆 ${challengerWon?challenge.challengerFeralName:getFeralDisplayName(defFeral)} wins!`,challengerWon?'var(--red)':'var(--green)');
+};
+
+window.declinePvP = async function(challengeId) {
+  playerData.pvpChallenges=(playerData.pvpChallenges||[]).filter(c=>c.id!==challengeId);
+  await savePlayerData(); renderPvP();
+};
+
+// ===== SHOP =====
+function renderShop() {
+  const list=document.getElementById('shopList');
+  list.innerHTML=`
+    <p class="helper-text">Items also drop from battles and traps!</p>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">🪱 FISHING</div>
+    ${shopItemHTML({id:'bait',name:'Fishing Bait',icon:'🪱',rarity:'common',type:'bait',price:1,desc:'Required to fish. One use per cast.'})}
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">💊 HEALING & REVIVAL</div>
+    ${ITEMS_DATA.healing.map(i=>shopItemHTML(i)).join('')}
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">💎 TRINKETS</div>
+    ${ITEMS_DATA.trinkets.map(i=>shopItemHTML(i)).join('')}
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">✨ ESSENCES</div>
+    ${ITEMS_DATA.essences.map(i=>shopItemHTML(i)).join('')}
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">🪨 STONES</div>
+    ${ITEMS_DATA.stones.map(i=>shopItemHTML(i)).join('')}`;
+}
+function shopItemHTML(item) {
+  return `<div class="shop-item" onclick="buyItem('${item.id}')"><div class="shop-item-icon">${item.icon}</div><div class="shop-item-info"><div class="shop-item-name">${item.name} <span class="rarity-badge ${getRarityClass(item.rarity)}" style="font-size:6px;">${item.rarity.toUpperCase()}</span></div><div class="shop-item-desc">${item.desc}</div></div><div class="shop-item-price">💎 ${item.price}</div></div>`;
+}
+window.buyItem = async function(itemId) {
+  // Bait special case
+  if(itemId==='bait'){
+    if((playerData.shards||0)<1){ showNotif('Not enough Shards!','var(--red)'); return; }
+    playerData.shards-=1; playerData.bait=(playerData.bait||0)+1;
+    await savePlayerData(); updateTopbar(); updateBaitDisplay(); renderShop();
+    showNotif('🪱 Bait purchased!','var(--green)'); return;
+  }
+  const item=findItem(itemId); if(!item) return;
+  if((playerData.shards||0)<item.price){ showNotif('Not enough Shards!','var(--red)'); return; }
+  playerData.shards-=item.price;
+  playerData.inventory=[...(playerData.inventory||[]),{itemId,obtained:Date.now()}];
+  await savePlayerData(); updateTopbar(); renderShop();
+  showNotif(`✓ Bought ${item.name}!`,'var(--green)');
+};
+
+// ===== LEADERBOARD =====
+async function renderLeaderboard() {
+  const content=document.getElementById('leaderboardContent');
+  content.innerHTML='<div style="text-align:center;color:var(--text2);padding:20px;">Loading...</div>';
+  const allData=await getAllPlayersData();
+  let allFerals=[];
+  for(const pid of Object.keys(allData)){
+    const pd=allData[pid], player=PLAYERS.find(p=>p.id===pid);
+    (pd.ferals||[]).filter(f=>f.alive!==false&&(f.wins||0)>0).forEach(f=>allFerals.push({...f,ownerName:player?.name}));
+  }
+  allFerals.sort((a,b)=>(b.wins||0)-(a.wins||0));
+  const killFerals=[...allFerals].sort((a,b)=>(b.kills||0)-(a.kills||0));
+  const playerStats=PLAYERS.map(p=>{ const pd=allData[p.id]; return{...p,shards:pd?.totalShards||0,caught:pd?.totalCaught||0,tamerLevel:pd?.tamerLevel||1,totalFish:pd?.totalFishCaught||0,fishRecords:pd?.fishRecords||{}}; }).sort((a,b)=>b.shards-a.shards);
+  const fishStats=[...playerStats].sort((a,b)=>b.totalFish-a.totalFish);
+  const biggestFishHTML=FISH_DATA.map(fish=>{
+    let best=null, bestPlayer=null;
+    PLAYERS.forEach(p=>{ const r=allData[p.id]?.fishRecords?.[fish.id]; if(r&&(!best||r.length>best.length)){ best=r; bestPlayer=p; } });
+    return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:16px;"><span>${fish.icon} ${fish.name}</span><span style="color:var(--gold);">${best?`${best.length}" ${best.weight}lb — ${bestPlayer.name}`:'—'}</span></div>`;
+  }).join('');
+  content.innerHTML=`
+    <div class="section-title">⚔️ TOP FERALS BY WINS</div>
+    ${allFerals.length===0?'<div class="helper-text">No battle wins yet!</div>':allFerals.slice(0,5).map((f,i)=>`<div class="leaderboard-row"><div class="leaderboard-rank">${['🥇','🥈','🥉','4','5'][i]}</div><div>${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','28px')}</div><div class="leaderboard-info"><div style="font-family:var(--pixel);font-size:8px;">${getFeralDisplayName(f)}</div><div style="color:var(--text2);font-size:15px;">${f.ownerName}'s ${f.rarity}</div></div><div class="leaderboard-val">⚔️ ${f.wins||0}</div></div>`).join('')}
+    <div class="section-title" style="margin-top:16px;">💀 TOP FERALS BY KILLS</div>
+    ${killFerals.length===0?'<div class="helper-text">No kills yet!</div>':killFerals.slice(0,5).map((f,i)=>`<div class="leaderboard-row"><div class="leaderboard-rank">${['🥇','🥈','🥉','4','5'][i]}</div><div>${feralSpriteHTML(f.feralId||f.id,f.shiny||'none','28px')}</div><div class="leaderboard-info"><div style="font-family:var(--pixel);font-size:8px;">${getFeralDisplayName(f)}</div><div style="color:var(--text2);font-size:15px;">${f.ownerName}'s ${f.rarity}</div></div><div class="leaderboard-val">💀 ${f.kills||0}</div></div>`).join('')}
+    <div class="section-title" style="margin-top:16px;">💎 TOP TAMERS BY SHARDS</div>
+    ${playerStats.map((p,i)=>`<div class="leaderboard-row"><div class="leaderboard-rank">${['🥇','🥈','🥉'][i]||i+1}</div><div style="font-size:28px;">${p.icon}</div><div class="leaderboard-info"><div style="font-family:var(--pixel);font-size:8px;">${p.name}</div><div style="color:var(--text2);font-size:15px;">Lv.${p.tamerLevel} | ${p.caught} caught</div></div><div class="leaderboard-val">💎 ${p.shards}</div></div>`).join('')}
+    <div class="section-title" style="margin-top:16px;">🎣 TOP FISHERS</div>
+    ${fishStats.map((p,i)=>`<div class="leaderboard-row"><div class="leaderboard-rank">${['🥇','🥈','🥉'][i]||i+1}</div><div style="font-size:28px;">${p.icon}</div><div class="leaderboard-info"><div style="font-family:var(--pixel);font-size:8px;">${p.name}</div></div><div class="leaderboard-val">🐟 ${p.totalFish}</div></div>`).join('')}
+    <div class="section-title" style="margin-top:16px;">🏆 BIGGEST FISH</div>
+    <div class="card">${biggestFishHTML}</div>`;
+}
+
+// ===== MARKET =====
+async function renderMarket() {
+  const content=document.getElementById('marketContent');
+  content.innerHTML='<div style="text-align:center;color:var(--text2);padding:20px;">Loading market...</div>';
+  let listings=[];
+  try{ const snap=await getDoc(doc(db,'market','listings')); if(snap.exists()) listings=snap.data().items||[]; }catch(e){}
+  const mine=listings.filter(l=>l.sellerId===currentPlayer.id);
+  const others=listings.filter(l=>l.sellerId!==currentPlayer.id);
+  content.innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'+
+    '<button class="btn btn-green btn-sm" onclick="openListItem()">+ LIST ITEM</button>'+
+    '<button class="btn btn-blue btn-sm" onclick="openListFeral()">+ LIST FERAL</button></div>'+
+    '<div class="market-filter-bar">'+
+    ['all','feral','trinket','essence','stone','healing'].map(t=>`<button class="filter-btn${t==='all'?' active':''}" onclick="filterMarket('${t}',this)">${t.toUpperCase()}</button>`).join('')+
+    '</div>'+
+    (mine.length>0?'<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">YOUR LISTINGS</div>'+mine.map(l=>mktHTML(l,true)).join('')+'<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 8px;">MARKET</div>':'')+
+    (others.length===0?'<div class="empty-state"><span class="empty-icon">🏪</span>No listings yet!</div>':others.map(l=>mktHTML(l,false)).join(''));
+  content.addEventListener('click',function(e){
+    const listing=e.target.closest('.market-listing'); if(!listing) return;
+    const id=listing.dataset.listingid, isMine=listing.dataset.mine==='1';
+    if(isMine) cancelListing(id); else buyListing(id);
+  },{once:true});
+}
+function mktHTML(l,mine){
+  const icon=l.type==='feral'?feralSpriteHTML(l.itemId,'none','32px'):`<span style="font-size:28px;">${l.icon||'📦'}</span>`;
+  const tax=Math.ceil(l.price*0.1);
+  return `<div class="market-listing" data-type="${l.type}" data-listingid="${l.id}" data-mine="${mine?'1':'0'}" style="cursor:pointer;">${icon}<div class="market-listing-info"><div class="market-listing-name">${l.name}</div><div class="market-listing-sub">${l.sellerName} • ${l.rarity}${mine?' — tap to cancel':''}</div>${!mine?`<div style="color:var(--text2);font-size:13px;">Tax: ${tax} 💎 → Seller gets ${l.price-tax} 💎</div>`:''}</div><div class="market-listing-price">💎 ${l.price}</div></div>`;
+}
+window.filterMarket=function(type,btn){
+  document.querySelectorAll('.market-filter-bar .filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.querySelectorAll('.market-listing').forEach(el=>{el.style.display=(type==='all'||el.dataset.type===type)?'flex':'none';});
+};
+window.openListItem=function(){
+  const inv=playerData.inventory||[]; if(inv.length===0){ showNotif('No items to list!','var(--red)'); return; }
+  const unique={}; inv.forEach(i=>{ const item=findItem(i.itemId); if(item&&!unique[item.id]) unique[item.id]=item; });
+  const wrap=document.createElement('div'); wrap.innerHTML='<div class="modal-title">LIST AN ITEM</div>';
+  const scroll=document.createElement('div'); scroll.className='scroll-list';
+  Object.values(unique).forEach(item=>{
+    const d=document.createElement('div'); d.className='shop-item'; d.style.cursor='pointer';
+    d.innerHTML=`<div class="shop-item-icon">${item.icon}</div><div class="shop-item-info"><div class="shop-item-name">${item.name}</div><div class="shop-item-desc">${item.desc}</div></div><span class="rarity-badge ${getRarityClass(item.rarity)}">${item.rarity.toUpperCase()}</span>`;
+    d.onclick=()=>openPriceModal('item',item.id,item.name,item.icon,item.rarity,item.type);
+    scroll.appendChild(d);
+  });
+  wrap.appendChild(scroll); document.getElementById('modalBody').innerHTML=''; document.getElementById('modalBody').appendChild(wrap); document.getElementById('modalOverlay').style.display='flex';
+};
+window.openListFeral=function(){
+  const alive=(playerData.ferals||[]).filter(f=>f.alive!==false); if(alive.length===0){ showNotif('No Ferals to list!','var(--red)'); return; }
+  const wrap=document.createElement('div'); wrap.innerHTML='<div class="modal-title">LIST A FERAL</div><p style="color:var(--red);font-size:15px;text-align:center;margin-bottom:12px;">⚠️ No take backs! They leave immediately.</p>';
+  const scroll=document.createElement('div'); scroll.className='scroll-list';
+  alive.forEach(f=>{
+    const d=document.createElement('div'); d.className='select-feral-item'; d.style.cursor='pointer';
+    d.innerHTML=feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')+`<div class="sfi-info"><div class="sfi-name">${getFeralDisplayName(f)}</div><div class="sfi-stats">ATK:${f.stats?.atk} DEF:${f.stats?.def}</div></div>`;
+    d.onclick=()=>openPriceModal('feral',f.id,getFeralDisplayName(f),f.feralId||f.id,f.rarity,'feral');
+    scroll.appendChild(d);
+  });
+  wrap.appendChild(scroll); document.getElementById('modalBody').innerHTML=''; document.getElementById('modalBody').appendChild(wrap); document.getElementById('modalOverlay').style.display='flex';
+};
+window.openPriceModal=function(listType,itemId,name,iconOrId,rarity,subtype){
+  const wrap=document.createElement('div');
+  wrap.innerHTML='<div class="modal-title">SET PRICE</div>'+
+    `<div style="text-align:center;margin-bottom:16px;">${listType==='feral'?feralSpriteHTML(iconOrId,'none','48px'):`<span style="font-size:48px;">${iconOrId}</span>`}<div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);margin-top:8px;">${name}</div></div>`+
+    '<div style="margin-bottom:12px;"><div style="font-size:16px;color:var(--text2);margin-bottom:6px;">Price (1-9,999 Shards):</div>'+
+    '<input id="listingPrice" type="number" min="1" max="9999" value="100" style="width:100%;background:var(--bg3);border:2px solid var(--border);color:var(--text);font-family:var(--pixel);font-size:14px;padding:10px;"></div>'+
+    '<div style="color:var(--text2);font-size:15px;margin-bottom:12px;">10% tax. You receive 90%.</div>';
+  const btn=document.createElement('button'); btn.className='btn btn-gold'; btn.textContent='LIST NOW'; btn.onclick=()=>confirmListing(listType,itemId,name,iconOrId,rarity,subtype);
+  wrap.appendChild(btn); document.getElementById('modalBody').innerHTML=''; document.getElementById('modalBody').appendChild(wrap); document.getElementById('modalOverlay').style.display='flex';
+};
+window.confirmListing=async function(listType,itemId,name,iconOrId,rarity,subtype){
+  const price=parseInt(document.getElementById('listingPrice')?.value||0);
+  if(!price||price<1||price>9999){ showNotif('Price must be 1-9999!','var(--red)'); return; }
+  let listings=[];
+  try{ const snap=await getDoc(doc(db,'market','listings')); if(snap.exists()) listings=snap.data().items||[]; }catch(e){}
+  if(listings.filter(l=>l.sellerId===currentPlayer.id).length>=10){ showNotif('Max 10 listings!','var(--red)'); return; }
+  const listing={id:'lst_'+Date.now(),type:listType==='feral'?'feral':subtype,itemId,name,rarity,icon:listType==='feral'?null:iconOrId,price,sellerId:currentPlayer.id,sellerName:currentPlayer.name,listedAt:Date.now()};
+  if(listType==='feral'){ const idx=(playerData.ferals||[]).findIndex(f=>f.id===itemId); if(idx!==-1){ listing.feralData=playerData.ferals[idx]; playerData.ferals.splice(idx,1); } }
+  else{ const idx=(playerData.inventory||[]).findIndex(i=>i.itemId===itemId); if(idx!==-1) playerData.inventory.splice(idx,1); }
+  listings.push(listing);
+  await setDoc(doc(db,'market','listings'),{items:listings});
+  await savePlayerData(); closeModal(); renderMarket(); renderRoster(); updateTopbar();
+  showNotif(`🏪 Listed ${name} for ${price} 💎!`,'var(--green)');
+};
+window.buyListing=async function(listingId){
+  let listings=[];
+  try{ const snap=await getDoc(doc(db,'market','listings')); if(snap.exists()) listings=snap.data().items||[]; }catch(e){}
+  const l=listings.find(x=>x.id===listingId); if(!l){ showNotif('Already sold!','var(--red)'); renderMarket(); return; }
+  if((playerData.shards||0)<l.price){ showNotif('Not enough Shards!','var(--red)'); return; }
+  const tax=Math.ceil(l.price*0.1);
+  const body=document.createElement('div');
+  body.innerHTML='<div class="modal-title">CONFIRM PURCHASE</div><div style="text-align:center;padding:16px;">'+
+    (l.type==='feral'?feralSpriteHTML(l.itemId,'none','48px'):`<span style="font-size:48px;">${l.icon||'📦'}</span>`)+
+    `<div style="font-family:var(--pixel);font-size:9px;color:var(--accent2);margin:8px 0;">${l.name}</div><div style="color:var(--text2);font-size:18px;">Cost: 💎 ${l.price}</div><div style="color:var(--text2);font-size:15px;">Tax: 💎 ${tax} → seller gets ${l.price-tax}</div></div>`;
+  const btn=document.createElement('button'); btn.className='btn btn-gold'; btn.textContent='💰 BUY NOW'; btn.onclick=()=>confirmBuy(listingId); body.appendChild(btn);
+  const cancel=document.createElement('button'); cancel.className='btn btn-gray'; cancel.style.marginTop='8px'; cancel.textContent='CANCEL'; cancel.onclick=closeModal; body.appendChild(cancel);
+  document.getElementById('modalBody').innerHTML=''; document.getElementById('modalBody').appendChild(body); document.getElementById('modalOverlay').style.display='flex';
+};
+window.confirmBuy=async function(listingId){
+  let listings=[];
+  try{ const snap=await getDoc(doc(db,'market','listings')); if(snap.exists()) listings=snap.data().items||[]; }catch(e){}
+  const li=listings.findIndex(x=>x.id===listingId); if(li===-1){ showNotif('Already sold!','var(--red)'); closeModal(); renderMarket(); return; }
+  const l=listings[li]; if((playerData.shards||0)<l.price){ showNotif('Not enough Shards!','var(--red)'); return; }
+  const tax=Math.ceil(l.price*0.1), sellerGets=l.price-tax;
+  playerData.shards=(playerData.shards||0)-l.price;
+  if(l.type==='feral'&&l.feralData){ if((playerData.ferals||[]).filter(f=>f.alive!==false).length>=100){ showNotif('Roster full!','var(--red)'); return; } playerData.ferals=[...(playerData.ferals||[]),{...l.feralData,id:'f_'+Date.now()}]; }
+  else{ playerData.inventory=[...(playerData.inventory||[]),{itemId:l.itemId,obtained:Date.now()}]; }
+  try{ const ss=await getDoc(doc(db,'players',l.sellerId)); if(ss.exists()){ const sd=ss.data(); sd.shards=(sd.shards||0)+sellerGets; await setDoc(doc(db,'players',l.sellerId),sd); } }catch(e){}
+  listings.splice(li,1);
+  await setDoc(doc(db,'market','listings'),{items:listings});
+  await savePlayerData(); closeModal(); renderMarket(); updateTopbar(); renderRoster();
+  showNotif(`✅ Bought ${l.name}!`,'var(--green)');
+};
+window.cancelListing=async function(listingId){
+  const body=document.createElement('div');
+  body.innerHTML='<div class="modal-title">CANCEL LISTING?</div><p style="text-align:center;color:var(--text2);font-size:17px;margin-bottom:16px;">Return this item to your inventory?</p>';
+  const btn=document.createElement('button'); btn.className='btn btn-red'; btn.textContent='YES — CANCEL LISTING'; btn.onclick=()=>confirmCancel(listingId); body.appendChild(btn);
+  const nb=document.createElement('button'); nb.className='btn btn-gray'; nb.style.marginTop='8px'; nb.textContent='KEEP LISTING'; nb.onclick=closeModal; body.appendChild(nb);
+  document.getElementById('modalBody').innerHTML=''; document.getElementById('modalBody').appendChild(body); document.getElementById('modalOverlay').style.display='flex';
+};
+window.confirmCancel=async function(listingId){
+  let listings=[];
+  try{ const snap=await getDoc(doc(db,'market','listings')); if(snap.exists()) listings=snap.data().items||[]; }catch(e){}
+  const li=listings.findIndex(x=>x.id===listingId&&x.sellerId===currentPlayer.id); if(li===-1){ closeModal(); return; }
+  const l=listings[li];
+  if(l.type==='feral'&&l.feralData) playerData.ferals=[...(playerData.ferals||[]),l.feralData];
+  else playerData.inventory=[...(playerData.inventory||[]),{itemId:l.itemId,obtained:Date.now()}];
+  listings.splice(li,1);
+  await setDoc(doc(db,'market','listings'),{items:listings});
+  await savePlayerData(); closeModal(); renderMarket(); renderRoster();
+  showNotif('Listing cancelled.','var(--text2)');
+};
+
+// ===== FORAGING =====
+function renderForage(){
+  const content=document.getElementById('forageContent');
+  const forage=playerData.forage, fl=playerData.forageLevel||1, fx=playerData.forageXp||0;
+  const cu=playerData.cauldronUnlocked||false, hl=playerData.herbloreLevel||1;
+  if(forageInterval2) clearInterval(forageInterval2);
+  let timerHTML='', actionHTML='';
+  if(forage&&Date.now()<forage.endTime){
+    const upd=()=>{ const rem=Math.max(0,forage.endTime-Date.now()); const m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000); const el=document.getElementById('forageTimer2'); if(el) el.textContent=m+':'+(s+'').padStart(2,'0'); if(rem===0){ clearInterval(forageInterval2); renderForage(); } };
+    forageInterval2=setInterval(upd,1000); timerHTML='<div class="trap-timer" id="forageTimer2">--:--</div>'; actionHTML='<div style="color:var(--text2);font-size:16px;">Foraging...</div>'; setTimeout(upd,0);
+  } else if(forage&&Date.now()>=forage.endTime){
+    actionHTML='<button class="btn btn-green" onclick="claimForage()">🌿 CLAIM!</button>';
+  } else {
+    actionHTML='<button class="btn btn-green" onclick="startForage()">🌿 FORAGE (2 min)</button>';
+  }
+  const avail=FORAGE_MATERIALS.filter(m=>m.minLevel<=fl);
+  const mats=playerData.materials||{};
+  const matHTML=Object.entries(mats).filter(([,q])=>q>0).map(([id,q])=>{ const m=FORAGE_MATERIALS.find(x=>x.id===id); return m?`<div style="background:var(--bg3);border:1px solid var(--border);padding:6px 10px;font-size:16px;">${m.icon} ${m.name} x${q}</div>`:''; }).join('')||'<div style="color:var(--text2);font-size:15px;">No materials yet.</div>';
+  content.innerHTML=
+    `<div class="forage-area"><span class="forage-icon">🌿</span><div class="trap-status">FORAGING Lv.${fl}</div><div style="color:var(--text2);font-size:15px;margin-bottom:8px;">XP: ${fx} | Next Lv: ${Math.max(0,fl*50-fx)} XP</div>${timerHTML}${actionHTML}</div>`+
+    '<div class="section-title">🧪 CAULDRON — HERBLORE</div>'+
+    (!cu?`<div class="card" style="text-align:center;"><div style="font-size:36px;">🪄</div><div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:8px 0;">CAULDRON LOCKED</div><div style="color:var(--text2);font-size:16px;margin-bottom:12px;">Brew healing items from foraged materials</div><button class="btn btn-gold" onclick="unlockCauldron()">🔓 UNLOCK — 200 💎</button></div>`:
+    `<div style="margin-bottom:12px;"><div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">HERBLORE Lv.${hl} — YOUR MATERIALS</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">${matHTML}</div><div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">RECIPES</div>`+
+    HERBLORE_RECIPES.filter(r=>r.minLevel<=hl).map(r=>`<div class="recipe-card"><div class="recipe-name">${r.icon} ${r.name}</div><div class="recipe-ingredients">Needs: ${r.ingredients.map(id=>{ const m=FORAGE_MATERIALS.find(x=>x.id===id); return m?m.icon+' '+m.name:id; }).join(', ')}</div><div style="color:var(--text2);font-size:14px;margin-top:4px;">${r.desc}</div><button class="btn btn-green btn-sm brew-btn" style="margin-top:8px;" data-recipeid="${r.id}">BREW</button></div>`).join('')+
+    (HERBLORE_RECIPES.filter(r=>r.minLevel>hl).length>0?`<div style="color:var(--text2);font-size:15px;">🔒 ${HERBLORE_RECIPES.filter(r=>r.minLevel>hl).length} recipes locked</div>`:'')+
+    '</div>')+
+    `<div class="section-title">📖 DROPS AT Lv.${fl}</div>`+
+    avail.map(m=>`<div class="material-card"><span style="font-size:24px;">${m.icon}</span><div><div style="font-family:var(--pixel);font-size:8px;">${m.name}</div><div style="color:var(--text2);font-size:15px;">${m.desc}</div></div><span class="rarity-badge ${getRarityClass(m.rarity)}">${m.rarity.toUpperCase()}</span></div>`).join('');
+  content.querySelectorAll('.brew-btn').forEach(btn=>btn.addEventListener('click',()=>brewRecipe(btn.dataset.recipeid)));
+}
+window.startForage=async function(){ playerData.forage={endTime:Date.now()+2*60*1000}; await savePlayerData(); renderForage(); showNotif('🌿 Foraging! Back in 2 minutes.'); };
+window.claimForage=async function(){
+  const fl=playerData.forageLevel||1, avail=FORAGE_MATERIALS.filter(m=>m.minLevel<=fl);
+  const count=rollRange(1,3), found=[];
+  for(let i=0;i<count;i++){
+    const r=Math.random()*100; let pool;
+    if(r<60) pool=avail.filter(m=>m.rarity==='common'); else if(r<85) pool=avail.filter(m=>m.rarity==='uncommon'); else pool=avail.filter(m=>m.rarity==='rare');
+    if(!pool?.length) pool=avail.filter(m=>m.rarity==='common');
+    if(pool.length){ const mat=pool[Math.floor(Math.random()*pool.length)]; found.push(mat); playerData.materials=playerData.materials||{}; playerData.materials[mat.id]=(playerData.materials[mat.id]||0)+1; }
+  }
+  playerData.forageXp=(playerData.forageXp||0)+10;
+  const nl=Math.floor((playerData.forageXp||0)/50)+1;
+  if(nl>(playerData.forageLevel||1)){ playerData.forageLevel=nl; showNotif(`🌿 Foraging Lv.${nl}!`,'var(--green)'); }
+  playerData.forage=null; await savePlayerData(); renderForage();
+  openModal(`<div class="modal-title">🌿 FORAGE COMPLETE!</div><div style="text-align:center;padding:16px;">${found.length?found.map(m=>`<div class="loot-item"><span style="font-size:24px;">${m.icon}</span><div><div style="font-family:var(--pixel);font-size:8px;">${m.name}</div><div style="color:var(--text2);font-size:15px;">${m.desc}</div></div></div>`).join(''):'<div style="color:var(--text2);">Nothing found...</div>'}<div style="color:var(--accent2);margin-top:12px;font-size:16px;">+10 Foraging XP</div></div>`);
+};
+window.unlockCauldron=async function(){ if((playerData.shards||0)<200){ showNotif('Not enough Shards!','var(--red)'); return; } playerData.shards-=200; playerData.cauldronUnlocked=true; await savePlayerData(); updateTopbar(); renderForage(); showNotif('🪄 Cauldron unlocked!','var(--gold)'); };
+window.brewRecipe=async function(recipeId){
+  const recipe=HERBLORE_RECIPES.find(r=>r.id===recipeId); if(!recipe) return;
+  const mats=playerData.materials||{};
+  for(const ing of recipe.ingredients){ if(!mats[ing]||mats[ing]<1){ showNotif('Missing: '+(FORAGE_MATERIALS.find(m=>m.id===ing)?.name||ing),'var(--red)'); return; } }
+  for(const ing of recipe.ingredients) mats[ing]--;
+  playerData.materials=mats;
+  playerData.inventory=[...(playerData.inventory||[]),{itemId:recipe.result,obtained:Date.now()}];
+  playerData.herbloreXp=(playerData.herbloreXp||0)+15;
+  const nl=Math.floor((playerData.herbloreXp||0)/75)+1;
+  if(nl>(playerData.herbloreLevel||1)){ playerData.herbloreLevel=nl; showNotif(`🧪 Herblore Lv.${nl}!`,'var(--gold)'); }
+  await savePlayerData(); renderForage(); showNotif(`🧪 Brewed ${recipe.name}!`,'var(--green)');
+};
+
+// ===== FISHING =====
+function renderFishing() {
+  const content=document.getElementById('fishingContent'); if(!content) return;
+  const bait=playerData.bait||0, total=playerData.totalFishCaught||0, records=playerData.fishRecords||{};
+  const recordHTML=FISH_DATA.map(f=>{ const r=records[f.id]; return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:16px;"><span>${f.icon} ${f.name} <span class="rarity-badge ${getRarityClass(f.rarity)}" style="font-size:6px;">${f.rarity.toUpperCase()}</span></span><span style="color:var(--gold);">${r?r.length+'" / '+r.weight+'lb':'—'}</span></div>`; }).join('');
+  content.innerHTML=`
+    <div class="trap-area" style="text-align:center;">
+      <span style="font-size:60px;display:block;margin-bottom:8px;">🎣</span>
+      <div style="font-family:var(--pixel);font-size:9px;color:var(--blue);margin-bottom:4px;">FISHING HOLE</div>
+      <div style="font-size:18px;color:var(--gold);margin-bottom:8px;">🪱 Bait: ${bait}</div>
+      <div style="color:var(--text2);font-size:15px;margin-bottom:12px;">Total Caught: ${total}</div>
+      ${bait>0
+        ? `<button class="btn btn-blue" onclick="startFishingCast()">🎣 CAST LINE</button>`
+        : `<div style="color:var(--red);font-family:var(--pixel);font-size:8px;margin-bottom:8px;">NO BAIT!</div><button class="btn btn-gold" onclick="switchTab('shop')">🛒 BUY BAIT (1 💎 each)</button>`}
+    </div>
+    <div id="fishingMinigame" style="display:none;margin-bottom:16px;padding:0 4px;">
+      <div style="font-family:var(--pixel);font-size:8px;color:var(--accent2);text-align:center;margin-bottom:10px;" id="fishingPrompt">Something's biting!</div>
+      <div class="fishing-bar-wrap" id="fishingBar">
+        <div class="fishing-target" id="fishingTarget"></div>
+        <div class="fishing-line" id="fishingLine" style="left:0%;"></div>
+      </div>
+      <button class="btn btn-green" onclick="attemptCatch()" style="padding:18px;font-size:15px;">🎣 STOP!</button>
+    </div>
+    <div class="section-title" style="margin-top:16px;">📋 PERSONAL RECORDS</div>
+    <div class="card">${recordHTML}</div>
+    <div class="section-title" style="margin-top:16px;">🐟 FISH GUIDE</div>
+    <div class="card"><div style="font-size:15px;line-height:2.2;color:var(--text2);">
+      🐟 Minnow — Common — Heals 10 HP<br>
+      🦐 Crawfish — Common — Heals 15 HP<br>
+      🐠 Sunfish — Common — Heals 25 HP<br>
+      🐡 Pufferfish — Uncommon — Heals 20 HP<br>
+      🐢 Snapper — Uncommon — Heals 35 HP<br>
+      🐬 Riverfin — Rare — Heals 50 HP<br>
+      🦈 Deepfin — Epic — Heals 80 HP<br>
+      🐙 Kraken Catch — Legendary — Full Heal<br>
+      🌟 Goldfish — Legendary — Leaderboard trophy only
+    </div></div>`;
+}
+
+window.startFishingCast = function() {
+  if((playerData.bait||0)<=0){ showNotif('No bait!','var(--red)'); return; }
+  playerData.bait-=1; updateBaitDisplay(); savePlayerData();
+  fishingPendingFish=pickFish(); fishingLineSpeed=fishingPendingFish.speed;
+  fishingActive=true; fishingLinePos=0; fishingLineDir=1;
+  const mg=document.getElementById('fishingMinigame'); if(mg) mg.style.display='block';
+  const targetWidth=Math.max(8,24-fishingLineSpeed*2.2);
+  const targetLeft=5+Math.random()*(90-targetWidth);
+  const target=document.getElementById('fishingTarget');
+  if(target){ target.style.left=targetLeft+'%'; target.style.width=targetWidth+'%'; target._left=targetLeft; target._right=targetLeft+targetWidth; }
+  document.getElementById('fishingPrompt').textContent='Stop the red line on the yellow zone!';
+  if(fishingBarInterval) clearInterval(fishingBarInterval);
+  fishingBarInterval=setInterval(()=>{
+    fishingLinePos+=fishingLineDir*fishingLineSpeed;
+    if(fishingLinePos>=100){ fishingLinePos=100; fishingLineDir=-1; }
+    if(fishingLinePos<=0)  { fishingLinePos=0;   fishingLineDir=1;  }
+    const line=document.getElementById('fishingLine'); if(line) line.style.left=fishingLinePos+'%';
+  },16);
+};
+
+window.attemptCatch = function() {
+  if(!fishingActive) return;
+  clearInterval(fishingBarInterval); fishingActive=false;
+  const target=document.getElementById('fishingTarget');
+  const mg=document.getElementById('fishingMinigame');
+  const inZone=target&&fishingLinePos>=target._left&&fishingLinePos<=target._right;
+  if(!inZone){
+    document.getElementById('fishingPrompt').textContent='Missed! The fish got away.';
+    setTimeout(()=>{ if(mg) mg.style.display='none'; renderFishing(); },1500);
+    showNotif('❌ Missed! Try again.','var(--red)'); return;
+  }
+  const fish=fishingPendingFish;
+  const {length,weight}=rollFishSize(fish.avgLen,fish.avgWt,fish.sigma);
+  const catchRecord={fishId:fish.id,name:fish.name,icon:fish.icon,rarity:fish.rarity,length,weight,caughtAt:Date.now()};
+  playerData.fishCaught=[...(playerData.fishCaught||[]),catchRecord];
+  playerData.totalFishCaught=(playerData.totalFishCaught||0)+1;
+  const prev=(playerData.fishRecords||{})[fish.id];
+  const isRecord=!prev||length>prev.length;
+  if(isRecord){ playerData.fishRecords=playerData.fishRecords||{}; playerData.fishRecords[fish.id]=catchRecord; }
+  if(fish.id!=='goldfish') playerData.inventory=[...(playerData.inventory||[]),{itemId:'fish_'+fish.id,obtained:Date.now(),fishData:catchRecord}];
+  savePlayerData();
+  if(mg) mg.style.display='none';
+  openModal(`
+    <div class="modal-title">🎣 CAUGHT ONE!</div>
+    <div style="text-align:center;padding:16px;">
+      <div style="font-size:64px;">${fish.icon}</div>
+      <div style="font-family:var(--pixel);font-size:11px;color:var(--accent2);margin:8px 0;">${fish.name}</div>
+      <span class="rarity-badge ${getRarityClass(fish.rarity)}" style="font-size:8px;">${fish.rarity.toUpperCase()}</span>
+      <div style="margin-top:12px;font-size:20px;color:var(--gold);">${length}" &nbsp;•&nbsp; ${weight} lb</div>
+      ${isRecord?'<div style="color:var(--green);font-family:var(--pixel);font-size:8px;margin-top:8px;">🏆 NEW PERSONAL BEST!</div>':''}
+      ${fish.id==='goldfish'
+        ? '<div style="color:var(--gold);font-size:15px;margin-top:12px;">Leaderboard trophy only!</div>'
+        : `<div style="color:var(--text2);font-size:15px;margin-top:12px;">Feed to a Feral to heal ${fish.healHp>=999?'FULL HP':fish.healHp+' HP'}!</div>`}
+    </div>`);
+  renderFishing();
+};
+
+window.feedFishToFeral = function(feralId) {
+  const fishItems=(playerData.inventory||[]).filter(i=>i.itemId?.startsWith('fish_'));
+  if(fishItems.length===0){ showNotif('No fish in inventory!','var(--red)'); return; }
+  const feral=(playerData.ferals||[]).find(f=>f.id===feralId); if(!feral) return;
+  const fishList=fishItems.map(item=>{ const fd=FISH_DATA.find(f=>'fish_'+f.id===item.itemId); if(!fd) return '';
+    return `<div class="select-feral-item" style="cursor:pointer;" onclick="confirmFeedFish('${feralId}','${item.itemId}')"><span style="font-size:32px;">${fd.icon}</span><div class="sfi-info"><div class="sfi-name">${fd.name}</div><div class="sfi-stats">Heals ${fd.healHp>=999?'FULL HP':fd.healHp+' HP'} • ${item.fishData?.length||'?'}" ${item.fishData?.weight||'?'}lb</div></div></div>`; }).join('');
+  openModal(`<div class="modal-title">🐟 FEED A FISH</div>${fishList}`);
+};
+
+window.confirmFeedFish = async function(feralId,itemId) {
+  const feralIdx=(playerData.ferals||[]).findIndex(f=>f.id===feralId); if(feralIdx===-1) return;
+  const feral=playerData.ferals[feralIdx], maxHp=feral.stats?.hp||100;
+  const itemIdx=(playerData.inventory||[]).findIndex(i=>i.itemId===itemId); if(itemIdx===-1) return;
+  const fd=FISH_DATA.find(f=>'fish_'+f.id===itemId); if(!fd) return;
+  const healAmt=fd.healHp>=999?maxHp:fd.healHp;
+  feral.currentHp=Math.min(maxHp,(feral.currentHp??maxHp)+healAmt);
+  playerData.ferals[feralIdx]=feral; playerData.inventory.splice(itemIdx,1);
+  await savePlayerData(); closeModal();
+  showNotif(`🐟 ${getFeralDisplayName(feral)} ate the fish! +${healAmt} HP`,'var(--green)');
+  renderRoster();
+};
+
+// ===== INVENTORY =====
+function renderInventory() {
+  const content=document.getElementById('inventoryContent'); if(!content) return;
+  const inv=playerData.inventory||[];
+  if(inv.length===0&&(playerData.bait||0)===0){ content.innerHTML='<div style="text-align:center;color:var(--text2);padding:30px;font-size:17px;">Your inventory is empty!<br><br>Buy items from the Shop or catch fish.</div>'; return; }
+  const counts={};
+  inv.forEach(i=>{ counts[i.itemId]=(counts[i.itemId]||0)+1; });
+  const fishItems   =Object.entries(counts).filter(([id])=>id.startsWith('fish_'));
+  const regularItems=Object.entries(counts).filter(([id])=>!id.startsWith('fish_'));
+  const categories={trinket:[],essence:[],healing:[],revival:[],stone:[]};
+  regularItems.forEach(([id,qty])=>{ const item=findItem(id); if(!item) return; const cat=item.type==='revival'?'revival':item.type; if(categories[cat]) categories[cat].push({item,qty}); });
+  const catTitles={trinket:'💎 TRINKETS',essence:'✨ ESSENCES',healing:'💊 HEALING',revival:'💀 REVIVAL',stone:'🪨 STONES'};
+  let html='';
+  // Bait
+  if((playerData.bait||0)>0) html+=`<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:0 0 6px;">🪱 BAIT</div><div class="shop-item" style="cursor:default;"><div class="shop-item-icon">🪱</div><div class="shop-item-info"><div class="shop-item-name">Fishing Bait</div><div class="shop-item-desc">Used when casting a fishing line</div></div><div style="color:var(--gold);font-family:var(--pixel);font-size:10px;white-space:nowrap;">x${playerData.bait}</div></div>`;
+  // Regular items
+  Object.entries(categories).forEach(([cat,items])=>{
+    if(!items.length) return;
+    html+=`<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 6px;">${catTitles[cat]}</div>`;
+    items.forEach(({item,qty})=>{ html+=`<div class="shop-item" style="cursor:default;"><div class="shop-item-icon">${item.icon}</div><div class="shop-item-info"><div class="shop-item-name">${item.name} <span class="rarity-badge ${getRarityClass(item.rarity)}" style="font-size:6px;">${item.rarity.toUpperCase()}</span></div><div class="shop-item-desc">${item.desc}</div></div><div style="color:var(--gold);font-family:var(--pixel);font-size:10px;white-space:nowrap;">x${qty}</div></div>`; });
+  });
+  // Fish
+  if(fishItems.length){ html+=`<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin:12px 0 6px;">🐟 FISH</div>`;
+    fishItems.forEach(([id,qty])=>{ const fd=FISH_DATA.find(f=>'fish_'+f.id===id); if(!fd) return; html+=`<div class="shop-item" style="cursor:default;"><div class="shop-item-icon">${fd.icon}</div><div class="shop-item-info"><div class="shop-item-name">${fd.name} <span class="rarity-badge ${getRarityClass(fd.rarity)}" style="font-size:6px;">${fd.rarity.toUpperCase()}</span></div><div class="shop-item-desc">Heals ${fd.healHp>=999?'FULL HP':fd.healHp+' HP'} when fed to a Feral</div></div><div style="color:var(--gold);font-family:var(--pixel);font-size:10px;white-space:nowrap;">x${qty}</div></div>`; });
+  }
+  content.innerHTML=`<div style="color:var(--text2);font-size:15px;margin-bottom:12px;">Total items: ${inv.length}</div>${html}`;
+}
+
+// ===== TAMER PROFILE =====
+function renderTamer(){
+  const content=document.getElementById('tamerContent');
+  const xp=playerData.tamerXp||0, lvl=getLevelFromXp(xp), toNext=getXpToNextLevel(xp), pct=getXpProgress(xp);
+  const ferals=playerData.ferals||[], alive=ferals.filter(f=>f.alive!==false).length, fallen=ferals.filter(f=>f.alive===false).length;
+  const wins=ferals.reduce((a,f)=>a+(f.wins||0),0), kills=ferals.reduce((a,f)=>a+(f.kills||0),0);
+  const rows=[
+    ['💎 Shards Earned',   (playerData.totalShards||0).toLocaleString()],
+    ['🐾 Total Caught',    playerData.totalCaught||0],
+    ['🐾 Active Ferals',   `${alive}/100`],
+    ['💀 Fallen Ferals',   fallen],
+    ['⚔️ Total Wins',      wins],
+    ['💀 Total Kills',     kills],
+    ['🎣 Fish Caught',     playerData.totalFishCaught||0],
+    ['🪤 Trap Tier',       getTrapTier().name],
+    ['🌿 Forage Level',    `Lv.${playerData.forageLevel||1}`],
+    ['🧪 Herblore Level',  `Lv.${playerData.herbloreLevel||1}`],
+    ['🪄 Cauldron',        playerData.cauldronUnlocked?'UNLOCKED':'LOCKED'],
+  ];
+  content.innerHTML=
+    `<div style="text-align:center;margin-bottom:20px;"><div class="tamer-avatar">${currentPlayer.icon}</div><div style="font-family:var(--pixel);font-size:12px;color:var(--accent2);">${currentPlayer.name}</div><div style="color:var(--text2);font-size:17px;margin-top:4px;">Lv.${lvl} Tamer</div><div style="margin:8px auto;max-width:280px;"><div style="display:flex;justify-content:space-between;font-size:14px;color:var(--text2);margin-bottom:4px;"><span>${xp.toLocaleString()} XP</span><span>Next: ${toNext.toLocaleString()} XP</span></div><div style="height:6px;background:var(--bg3);border:1px solid var(--border);overflow:hidden;"><div style="height:100%;background:var(--accent2);width:${pct}%;"></div></div></div></div>`+
+    '<div class="section-title">📊 STATS</div>'+
+    rows.map(([label,val])=>`<div class="tamer-stat-row"><span class="tamer-stat-label">${label}</span><span class="tamer-stat-val">${val}</span></div>`).join('')+
+    '<div class="section-title" style="margin-top:16px;">🎨 COSMETICS</div><div style="text-align:center;padding:20px;color:var(--text2);font-size:16px;background:var(--bg3);border:1px solid var(--border);">Coming soon! Titles and badges.</div>';
+}
+
+// ===== DEX =====
+let dexFilter='all';
+window.setDexFilter = function(f) {
+  dexFilter=f;
+  document.querySelectorAll('[id^="dex-filter-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('dex-filter-'+f)?.classList.add('active');
+  renderDex();
+};
+function renderDex() {
+  const allFeralIds=Object.keys(FERALS_DATA), caught=playerData.ferals||[];
+  const dexMap={};
+  caught.forEach(f=>{ const fid=f.feralId||f.id; if(!dexMap[fid]) dexMap[fid]={total:0,glow:false,invert:false,ultra:false,alive:0,fallen:0}; dexMap[fid].total++; if(f.alive!==false) dexMap[fid].alive++; else dexMap[fid].fallen++; if(f.shiny==='glow') dexMap[fid].glow=true; if(f.shiny==='invert') dexMap[fid].invert=true; if(f.shiny==='both') dexMap[fid].ultra=true; });
+  document.getElementById('dexCount').textContent=`(${Object.keys(dexMap).length}/${allFeralIds.length} seen)`;
+  let ids=[...allFeralIds].sort((a,b)=>{ const rd=(rarityOrder[FERALS_DATA[a].rarity]||0)-(rarityOrder[FERALS_DATA[b].rarity]||0); return rd!==0?rd:FERALS_DATA[a].name.localeCompare(FERALS_DATA[b].name); });
+  if(dexFilter==='caught') ids=ids.filter(id=>dexMap[id]);
+  if(dexFilter==='unseen') ids=ids.filter(id=>!dexMap[id]);
+  const grid=document.getElementById('dexGrid');
+  if(ids.length===0){ grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📖</span>Nothing here yet!</div>'; return; }
+  const rc={common:'#94a3b8',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#f59e0b'};
+  grid.innerHTML=ids.map(fid=>{
+    const base=FERALS_DATA[fid], d=dexMap[fid], seen=!!d, c=rc[base.rarity]||'#94a3b8';
+    const shinyPips=seen?[d.glow?`<span class="dex-shiny-pip" style="color:var(--gold);border-color:var(--gold);">✨GLW</span>`:'',d.invert?`<span class="dex-shiny-pip" style="color:var(--accent2);border-color:var(--accent2);">🔄INV</span>`:'',d.ultra?`<span class="dex-shiny-pip" style="color:white;border-color:white;background:linear-gradient(90deg,gold,#c084fc);">🌟ULT</span>`:''].filter(Boolean).join(''):' ';
+    return `<div class="dex-card ${seen?'dex-seen':'dex-unseen'}" onclick="${seen?`openFeralDexEntry('${fid}')`:''}">${d&&d.total>1?`<div class="dex-count-badge">x${d.total}</div>`:''}<div>${feralSpriteHTML(fid,'none','32px')}</div><div class="fgc-name">${seen?base.name:'???'}</div><span class="fgc-rarity" style="color:${c};border-color:${c};">${base.rarity.toUpperCase()}</span>${shinyPips?`<div class="dex-shiny-row">${shinyPips}</div>`:''}${seen?`<div style="font-size:12px;color:var(--text2);margin-top:3px;">⚔️${d.alive} 💀${d.fallen}</div>`:''}</div>`;
+  }).join('');
+}
+window.openFeralDexEntry = function(fid) {
+  const base=FERALS_DATA[fid], caught=(playerData.ferals||[]).filter(f=>(f.feralId||f.id)===fid);
+  const glow=caught.filter(f=>f.shiny==='glow').length, invert=caught.filter(f=>f.shiny==='invert').length, ultra=caught.filter(f=>f.shiny==='both').length;
+  const alive=caught.filter(f=>f.alive!==false).length, fallen=caught.filter(f=>f.alive===false).length;
+  const best=caught.filter(f=>f.alive!==false).sort((a,b)=>(b.wins||0)-(a.wins||0))[0];
+  openModal(`
+    <div style="text-align:center;margin-bottom:16px;"><div>${feralSpriteHTML(fid,'none','64px')}</div><div class="modal-title">${base.name}</div><span class="rarity-badge ${getRarityClass(base.rarity)}">${base.rarity.toUpperCase()}</span></div>
+    <div style="font-style:italic;color:var(--text2);font-size:16px;padding:10px;background:var(--bg3);border:1px solid var(--border);margin-bottom:12px;">"${FERAL_LORE[fid]||'No data recorded.'}"</div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">BASE STATS</div>
+    <div class="stats-grid" style="margin-bottom:12px;">
+      <div class="stat-box"><div class="stat-label">HP</div><div class="stat-val">${base.baseStats.hp}</div></div>
+      <div class="stat-box"><div class="stat-label">ATK</div><div class="stat-val">${base.baseStats.atk}</div></div>
+      <div class="stat-box"><div class="stat-label">DEF</div><div class="stat-val">${base.baseStats.def}</div></div>
+      <div class="stat-box"><div class="stat-label">SPD</div><div class="stat-val">${base.baseStats.spd}</div></div>
+    </div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">ABILITY</div>
+    <div style="margin-bottom:12px;"><span class="ability-tag">⚡ ${base.ability?.name}: ${base.ability?.desc}</span></div>
+    <div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:8px;">YOUR RECORDS</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div class="stat-box" style="flex:1;"><div class="stat-label">Caught</div><div class="stat-val">${caught.length}</div></div>
+      <div class="stat-box" style="flex:1;"><div class="stat-label">Alive</div><div class="stat-val" style="color:var(--green);">${alive}</div></div>
+      <div class="stat-box" style="flex:1;"><div class="stat-label">Fallen</div><div class="stat-val" style="color:var(--red);">${fallen}</div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      ${glow?`<span class="shiny-badge shiny-badge-glow">✨ ${glow} SHINY</span>`:''}
+      ${invert?`<span class="shiny-badge shiny-badge-invert">🔄 ${invert} INVERTED</span>`:''}
+      ${ultra?`<span class="shiny-badge shiny-badge-both">🌟 ${ultra} ULTRA</span>`:''}
+      ${!glow&&!invert&&!ultra?'<span style="color:var(--text2);font-size:15px;">No shinies caught yet.</span>':''}
+    </div>
+    ${best?`<div style="font-family:var(--pixel);font-size:8px;color:var(--text2);margin-bottom:6px;">BEST FIGHTER</div><div style="background:var(--bg3);border:1px solid var(--border);padding:10px;font-size:16px;">${getFeralDisplayName(best)} — ⚔️ ${best.wins||0} wins | 💀 ${best.kills||0} kills</div>`:''}
+  `);
+};
+
+// ===== INIT =====
+renderLogin();
+window.showScreen  = showScreen;
+window.closeModal  = closeModal;
+window.switchTab   = switchTab;
