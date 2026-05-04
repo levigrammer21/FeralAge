@@ -625,3 +625,620 @@
     <button class="modal-close" onclick="closeModal()">CLOSE</button>
   </div>
 </div>
+<!-- ============================================================
+     PART 3 OF 5 — FIREBASE + ALL DATA + STATE + HELPERS
+     Paste this directly after Part 2 (after the closing modal div)
+     ============================================================ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDR-pLWBTCEBri4qDsaa5NV56UrGfzoPOQ",
+  authDomain: "feralage-e0ab2.firebaseapp.com",
+  projectId: "feralage-e0ab2",
+  storageBucket: "feralage-e0ab2.firebasestorage.app",
+  messagingSenderId: "7288480419",
+  appId: "1:7288480419:web:43c3ce7915e83e6f191516"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ===== FERALS =====
+const FERALS_DATA = {
+  abysselk:{id:'abysselk',name:'Abysselk',sprite:'abysselk',rarity:'rare',type:'water',baseStats:{hp:148,atk:22,def:28,spd:16},ability:{name:'Bioluminance',desc:'Blinds enemy at battle start reducing ATK by 20%'},basicAttack:'Depth Charge',specialAttack:'Abyss Antler'},
+  abyssmoth:{id:'abyssmoth',name:'Abyssmoth',sprite:'abyssmoth',rarity:'epic',type:'dark',baseStats:{hp:130,atk:22,def:16,spd:28},ability:{name:'Void Wings',desc:'Flickers through darkness to avoid harm'},basicAttack:'Duskwind',specialAttack:'Abyss Flutter'},
+  astrael:{id:'astrael',name:'Astrael',sprite:'astrael',rarity:'epic',type:'light',baseStats:{hp:145,atk:25,def:22,spd:22},ability:{name:'Starbound',desc:'Mystic light empowers its attacks'},basicAttack:'Star Pierce',specialAttack:'Astral Bloom'},
+  ashenwing:{id:'ashenwing',name:'Ashenwing',sprite:'ashenwing',rarity:'epic',type:'fire',baseStats:{hp:132,atk:34,def:16,spd:20},ability:{name:'Rebirth',desc:'Once per battle survives a killing blow with 15% HP'},basicAttack:'Ash Claw',specialAttack:'Cinder Storm'},
+  blazehart:{id:'blazehart',name:'Blazehart',sprite:'blazehart',rarity:'rare',type:'fire',baseStats:{hp:140,atk:26,def:18,spd:20},ability:{name:'Burning Antlers',desc:'Special attacks blaze with extra force'},basicAttack:'Flame Horn',specialAttack:'Wildfire Charge'},
+  bogsnap:{id:'bogsnap',name:'Bogsnap',sprite:'bogsnap',rarity:'uncommon',type:'water',baseStats:{hp:148,atk:24,def:24,spd:14},ability:{name:'Vinelash',desc:'Slows enemy SPD on hit'},basicAttack:'Swamp Bite',specialAttack:'Vine Crush'},
+  bramblehog:{id:'bramblehog',name:'Bramblehog',sprite:'bramblehog',rarity:'uncommon',type:'earth',baseStats:{hp:145,atk:20,def:28,spd:14},ability:{name:'Rooted Hide',desc:'Tough bramble armor protects it'},basicAttack:'Tusk Jab',specialAttack:'Briar Stampede'},
+  burrowl:{id:'burrowl',name:'Burrowl',sprite:'burrowl',rarity:'common',type:'earth',baseStats:{hp:112,atk:17,def:24,spd:17},ability:{name:'Tunnel Sense',desc:'Can avoid attacks by ducking underground'},basicAttack:'Dig Claw',specialAttack:'Burrow Burst'},
+  cindermane:{id:'cindermane',name:'Cindermane',sprite:'cindermane',rarity:'uncommon',type:'fire',baseStats:{hp:128,atk:22,def:15,spd:22},ability:{name:'Emberstride',desc:'Leaves burning ground dealing damage each round'},basicAttack:'Hoof Crash',specialAttack:'Inferno Gallop'},
+  cluckle:{id:'cluckle',name:'Cluckle',sprite:'cluckle',rarity:'common',type:'light',baseStats:{hp:110,atk:16,def:20,spd:20},ability:{name:'Static Feathers',desc:'25% chance to paralyze attacker on contact'},basicAttack:'Thunder Peck',specialAttack:'Zap Cluck'},
+  coralwing:{id:'coralwing',name:'Coralwing',sprite:'coralwing',rarity:'uncommon',type:'water',baseStats:{hp:115,atk:20,def:18,spd:22},ability:{name:'Venomshell',desc:'Poisons enemies that deal physical damage'},basicAttack:'Reef Talon',specialAttack:'Coral Dive'},
+  crystox:{id:'crystox',name:'Crystox',sprite:'crystox',rarity:'epic',type:'earth',baseStats:{hp:220,atk:20,def:40,spd:10},ability:{name:'Prism Horns',desc:'Crystal body deflects heavy blows'},basicAttack:'Crystal Ram',specialAttack:'Prism Quake'},
+  detonax:{id:'detonax',name:'Detonax',sprite:'detonax',rarity:'legendary',type:'fire',baseStats:{hp:250,atk:22,def:40,spd:14},ability:{name:'Bomb Claws',desc:'40% chance special attack causes explosion at 150% damage'},basicAttack:'Claw Slam',specialAttack:'Detonation Strike'},
+  drizzlefin:{id:'drizzlefin',name:'Drizzlefin',sprite:'drizzlefin',rarity:'common',type:'water',baseStats:{hp:105,atk:15,def:18,spd:22},ability:{name:'Raincoat',desc:'Small chance to soften incoming damage'},basicAttack:'Fin Flick',specialAttack:'Rain Splash'},
+  duskfang:{id:'duskfang',name:'Duskfang',sprite:'duskfang',rarity:'rare',type:'dark',baseStats:{hp:130,atk:22,def:12,spd:28},ability:{name:'Shadowstep',desc:'20% passive dodge chance'},basicAttack:'Shadow Bite',specialAttack:'Eclipse Fang'},
+  dustmaw:{id:'dustmaw',name:'Dustmaw',sprite:'dustmaw',rarity:'common',type:'earth',baseStats:{hp:105,atk:17,def:19,spd:18},ability:{name:'Sandcloak',desc:'15% chance to dodge'},basicAttack:'Sand Bite',specialAttack:'Dust Storm'},
+  dustwing:{id:'dustwing',name:'Dustwing',sprite:'dustwing',rarity:'uncommon',type:'earth',baseStats:{hp:105,atk:16,def:16,spd:24},ability:{name:'Dust Drift',desc:'May avoid attacks in swirling dust'},basicAttack:'Beak Jab',specialAttack:'Sand Spiral'},
+  ecliptor:{id:'ecliptor',name:'Ecliptor',sprite:'ecliptor',rarity:'legendary',type:'dark',baseStats:{hp:225,atk:30,def:28,spd:24},ability:{name:'Eclipse Aura',desc:'Dark celestial power bends the battle around it'},basicAttack:'Eclipse Bite',specialAttack:'Totality Howl'},
+  embertoad:{id:'embertoad',name:'Embertoad',sprite:'embertoad',rarity:'uncommon',type:'fire',baseStats:{hp:148,atk:18,def:34,spd:12},ability:{name:'Lavacoat',desc:'Attacker may be burned'},basicAttack:'Magma Tongue',specialAttack:'Eruption Leap'},
+  emberdrake:{id:'emberdrake',name:'Emberdrake',sprite:'emberdrake',rarity:'epic',type:'fire',baseStats:{hp:155,atk:28,def:24,spd:20},ability:{name:'Warmblood',desc:'Chubby dragon power grows as battle drags on'},basicAttack:'Dragon Bop',specialAttack:'Bellyfire Blast'},
+  embrak:{id:'embrak',name:'Embrak',sprite:'embrak',rarity:'rare',type:'earth',baseStats:{hp:170,atk:18,def:38,spd:12},ability:{name:'Ironhide',desc:'Reduces all damage taken by 5 flat'},basicAttack:'Stone Slam',specialAttack:'Golem Crush'},
+  flicket:{id:'flicket',name:'Flicket',sprite:'flicket',rarity:'common',type:'water',baseStats:{hp:90,atk:18,def:12,spd:26},ability:{name:'Glowbelly',desc:'Fast tricky attacker'},basicAttack:'Tongue Lash',specialAttack:'Lantern Burst'},
+  flarelynx:{id:'flarelynx',name:'Flarelynx',sprite:'flarelynx',rarity:'uncommon',type:'fire',baseStats:{hp:105,atk:22,def:14,spd:25},ability:{name:'Heat Pounce',desc:'Fast strikes grow hotter'},basicAttack:'Ember Claw',specialAttack:'Flare Pounce'},
+  frostgulp:{id:'frostgulp',name:'Frostgulp',sprite:'frostgulp',rarity:'rare',type:'water',baseStats:{hp:172,atk:18,def:32,spd:14},ability:{name:'Ice Pouch',desc:'Stores cold power for heavy attacks'},basicAttack:'Frost Peck',specialAttack:'Glacier Gulp'},
+  galehawk:{id:'galehawk',name:'Galehawk',sprite:'galehawk',rarity:'rare',type:'light',baseStats:{hp:108,atk:16,def:14,spd:32},ability:{name:'Cyclone Shield',desc:'Deflects 20% of all incoming damage'},basicAttack:'Gale Talon',specialAttack:'Tornado Dive'},
+  glimmeray:{id:'glimmeray',name:'Glimmeray',sprite:'glimmeray',rarity:'uncommon',type:'light',baseStats:{hp:100,atk:17,def:17,spd:27},ability:{name:'Light Drift',desc:'Floating glow helps it evade danger'},basicAttack:'Ray Tap',specialAttack:'Glimmer Beam'},
+  glintbug:{id:'glintbug',name:'Glintbug',sprite:'glintbug',rarity:'common',type:'light',baseStats:{hp:88,atk:15,def:13,spd:26},ability:{name:'Flicker',desc:'15% chance to dodge incoming attacks'},basicAttack:'Glint Bite',specialAttack:'Flash Swarm'},
+  glowtail:{id:'glowtail',name:'Glowtail',sprite:'glowtail',rarity:'uncommon',type:'light',baseStats:{hp:100,atk:19,def:22,spd:20},ability:{name:'Auroraveil',desc:'25% chance to negate an attack completely'},basicAttack:'Antler Strike',specialAttack:'Northern Lights'},
+  gravemole:{id:'gravemole',name:'Gravemole',sprite:'gravemole',rarity:'uncommon',type:'dark',baseStats:{hp:132,atk:18,def:28,spd:14},ability:{name:'Grave Dirt',desc:'Dark soil toughens its hide'},basicAttack:'Burial Swipe',specialAttack:'Tomb Collapse'},
+  grimelk:{id:'grimelk',name:'Grimelk',sprite:'grimelk',rarity:'common',type:'dark',baseStats:{hp:142,atk:18,def:22,spd:12},ability:{name:'Dread Stare',desc:'Intimidating presence lowers enemy confidence'},basicAttack:'Gloom Antler',specialAttack:'Dark Charge'},
+  grubbin:{id:'grubbin',name:'Grubbin',sprite:'grubbin',rarity:'common',type:'earth',baseStats:{hp:120,atk:16,def:27,spd:16},ability:{name:'Sporecloud',desc:'Tanky bug with stubborn defense'},basicAttack:'Needle Roll',specialAttack:'Spore Burst'},
+  grubrock:{id:'grubrock',name:'Grubrock',sprite:'grubrock',rarity:'common',type:'earth',baseStats:{hp:132,atk:16,def:30,spd:14},ability:{name:'Stone Belly',desc:'Sturdy body shrugs off weak hits'},basicAttack:'Pebble Nudge',specialAttack:'Rock Roll'},
+  hexcoon:{id:'hexcoon',name:'Hexcoon',sprite:'hexcoon',rarity:'epic',type:'dark',baseStats:{hp:140,atk:26,def:16,spd:26},ability:{name:'Overclock',desc:'+25% ATK and SPD but takes recoil damage'},basicAttack:'Junk Blast',specialAttack:'Rocket Barrage'},
+  ironmaw:{id:'ironmaw',name:'Ironmaw',sprite:'ironmaw',rarity:'rare',type:'earth',baseStats:{hp:178,atk:18,def:36,spd:12},ability:{name:'Crag Jaw',desc:'Heavy armor and crushing bite'},basicAttack:'Iron Bite',specialAttack:'Seismic Chomp'},
+  kelpcat:{id:'kelpcat',name:'Kelpcat',sprite:'kelpcat',rarity:'uncommon',type:'water',baseStats:{hp:112,atk:20,def:18,spd:22},ability:{name:'Kelp Snare',desc:'Tangling seaweed can slow enemies'},basicAttack:'Wet Claw',specialAttack:'Kelp Lash'},
+  lumipup:{id:'lumipup',name:'Lumipup',sprite:'lumipup',rarity:'common',type:'light',baseStats:{hp:108,atk:15,def:18,spd:22},ability:{name:'Glowheart',desc:'Light energy keeps it steady in battle'},basicAttack:'Bright Bite',specialAttack:'Lumen Howl'},
+  lunnis:{id:'lunnis',name:'Lunnis',sprite:'lunnis',rarity:'common',type:'light',baseStats:{hp:108,atk:16,def:16,spd:20},ability:{name:'Moonblessed',desc:'+25% all stats during nighttime battles'},basicAttack:'Lunar Kick',specialAttack:'Moonbeam'},
+  marshhorn:{id:'marshhorn',name:'Marshhorn',sprite:'marshhorn',rarity:'uncommon',type:'water',baseStats:{hp:142,atk:18,def:28,spd:14},ability:{name:'Bogstep',desc:'Muddy footing slows attackers'},basicAttack:'Mire Jab',specialAttack:'Swamp Charge'},
+  mirewing:{id:'mirewing',name:'Mirewing',sprite:'mirewing',rarity:'uncommon',type:'dark',baseStats:{hp:108,atk:12,def:18,spd:28},ability:{name:'Reflection',desc:'30% chance to reflect damage back'},basicAttack:'Wing Slash',specialAttack:'Mirror Shatter'},
+  moonclaw:{id:'moonclaw',name:'Moonclaw',sprite:'moonclaw',rarity:'rare',type:'dark',baseStats:{hp:118,atk:20,def:14,spd:28},ability:{name:'Crescent Prowl',desc:'Moonlit movement improves evasion'},basicAttack:'Lunar Slash',specialAttack:'Moonfang'},
+  moonreign:{id:'moonreign',name:'Moonreign',sprite:'moonreign',rarity:'epic',type:'light',baseStats:{hp:145,atk:24,def:22,spd:24},ability:{name:'Crescent Crown',desc:'Regal moonlight empowers its attacks'},basicAttack:'Royal Claw',specialAttack:'Moonlit Decree'},
+  mossfin:{id:'mossfin',name:'Mossfin',sprite:'mossfin',rarity:'common',type:'water',baseStats:{hp:122,atk:15,def:28,spd:16},ability:{name:'Overgrowth',desc:'Slowly regenerates HP each round'},basicAttack:'Fin Slap',specialAttack:'Moss Wave'},
+  mudillo:{id:'mudillo',name:'Mudillo',sprite:'mudillo',rarity:'common',type:'earth',baseStats:{hp:122,atk:18,def:24,spd:15},ability:{name:'Mud Coat',desc:'Gains extra toughness after being hit'},basicAttack:'Mud Roll',specialAttack:'Bog Slam'},
+  nebulodon:{id:'nebulodon',name:'Nebulodon',sprite:'nebulodon',rarity:'epic',type:'light',baseStats:{hp:200,atk:24,def:32,spd:16},ability:{name:'Cosmic Crush',desc:'Every 3rd attack deals double damage'},basicAttack:'Nebula Stomp',specialAttack:'Supernova Charge'},
+  obsidianx:{id:'obsidianx',name:'Obsidianx',sprite:'obsidianx',rarity:'rare',type:'earth',baseStats:{hp:158,atk:22,def:26,spd:16},ability:{name:'Lava Cracks',desc:'Stone body leaks heat when struck'},basicAttack:'Glass Claw',specialAttack:'Obsidian Burst'},
+  pebblox:{id:'pebblox',name:'Pebblox',sprite:'pebblox',rarity:'common',type:'earth',baseStats:{hp:155,atk:13,def:35,spd:16},ability:{name:'Rollguard',desc:'Takes half damage when HP drops below 30%'},basicAttack:'Pebble Toss',specialAttack:'Boulder Roll'},
+  primordra:{id:'primordra',name:'Primordra',sprite:'primordra',rarity:'legendary',type:'earth',baseStats:{hp:280,atk:30,def:42,spd:16},ability:{name:'Worldback',desc:'Ancient earth power makes it nearly immovable'},basicAttack:'Ancient Claw',specialAttack:'Continental Crush'},
+  puffalo:{id:'puffalo',name:'Puffalo',sprite:'puffalo',rarity:'common',type:'earth',baseStats:{hp:130,atk:16,def:30,spd:20},ability:{name:'Puff Guard',desc:'15% chance to reduce incoming damage'},basicAttack:'Cloud Bump',specialAttack:'Gale Snort'},
+  pyremanx:{id:'pyremanx',name:'Pyremanx',sprite:'pyremanx',rarity:'rare',type:'fire',baseStats:{hp:160,atk:24,def:17,spd:20},ability:{name:'Scorchstep',desc:'Burns enemies while dodging'},basicAttack:'Ember Paw',specialAttack:'Pyre Surge'},
+  riftserpent:{id:'riftserpent',name:'Riftserpent',sprite:'riftserpent',rarity:'epic',type:'dark',baseStats:{hp:118,atk:24,def:6,spd:26},ability:{name:'Dimensional Slip',desc:'35% chance to phase out avoiding any attack'},basicAttack:'Rift Fang',specialAttack:'Reality Shatter'},
+  riptide:{id:'riptide',name:'Riptide',sprite:'riptide',rarity:'rare',type:'water',baseStats:{hp:122,atk:22,def:17,spd:24},ability:{name:'Surging Current',desc:'Power rises as the fight continues'},basicAttack:'Wave Fang',specialAttack:'Tidal Coil'},
+  scorchling:{id:'scorchling',name:'Scorchling',sprite:'scorchling',rarity:'common',type:'fire',baseStats:{hp:85,atk:20,def:10,spd:26},ability:{name:'Flickerflame',desc:'Unstable flame may burn hotter'},basicAttack:'Tiny Flare',specialAttack:'Flame Pop'},
+  shardillo:{id:'shardillo',name:'Shardillo',sprite:'shardillo',rarity:'uncommon',type:'earth',baseStats:{hp:140,atk:16,def:32,spd:14},ability:{name:'Crystal Shell',desc:'Sharp crystal armor punishes contact'},basicAttack:'Shard Roll',specialAttack:'Crystal Crash'},
+  singeet:{id:'singeet',name:'Singeet',sprite:'singeet',rarity:'common',type:'fire',baseStats:{hp:88,atk:19,def:11,spd:25},ability:{name:'Hot Feet',desc:'Quick fire attacker with blazing speed'},basicAttack:'Ember Scratch',specialAttack:'Singe Dash'},
+  smoldursa:{id:'smoldursa',name:'Smoldursa',sprite:'smoldursa',rarity:'uncommon',type:'fire',baseStats:{hp:148,atk:22,def:22,spd:16},ability:{name:'Smoke Coat',desc:'Smoke clouds reduce incoming hits'},basicAttack:'Soot Swipe',specialAttack:'Ember Maul'},
+  snarlpup:{id:'snarlpup',name:'Snarlpup',sprite:'snarlpup',rarity:'common',type:'earth',baseStats:{hp:105,atk:19,def:17,spd:18},ability:{name:'Briar Coat',desc:'Thorns deal minor damage back'},basicAttack:'Thorn Bite',specialAttack:'Bramble Rush'},
+  snipsnap:{id:'snipsnap',name:'Snipsnap',sprite:'snipsnap',rarity:'common',type:'water',baseStats:{hp:95,atk:18,def:14,spd:22},ability:{name:'Quick Snip',desc:'10% chance to strike twice'},basicAttack:'Claw Clip',specialAttack:'Scissor Frenzy'},
+  solaryn:{id:'solaryn',name:'Solaryn',sprite:'solaryn',rarity:'legendary',type:'light',baseStats:{hp:200,atk:26,def:24,spd:28},ability:{name:'Sunfire Rebirth',desc:'Radiant flame refuses to fade'},basicAttack:'Solar Wing',specialAttack:'Sunfall Nova'},
+  solgriff:{id:'solgriff',name:'Solgriff',sprite:'solgriff',rarity:'rare',type:'light',baseStats:{hp:125,atk:22,def:18,spd:26},ability:{name:'Suncrest',desc:'Solar feathers strengthen its strikes'},basicAttack:'Solar Peck',specialAttack:'Radiant Dive'},
+  starclaw:{id:'starclaw',name:'Starclaw',sprite:'starclaw',rarity:'rare',type:'light',baseStats:{hp:112,atk:19,def:14,spd:26},ability:{name:'Celestial Map',desc:'25% chance to evade completely'},basicAttack:'Star Talon',specialAttack:'Constellation Strike'},
+  stonox:{id:'stonox',name:'Stonox',sprite:'stonox',rarity:'rare',type:'earth',baseStats:{hp:182,atk:15,def:36,spd:13},ability:{name:'Permafrost',desc:'Enemy SPD reduced on hit'},basicAttack:'Glacier Charge',specialAttack:'Avalanche'},
+  stormkraken:{id:'stormkraken',name:'Stormkraken',sprite:'stormkraken',rarity:'epic',type:'water',baseStats:{hp:148,atk:26,def:18,spd:26},ability:{name:'Storm Tentacles',desc:'Lightning-charged water lashes enemies'},basicAttack:'Tentacle Zap',specialAttack:'Tempest Coil'},
+  sylvix:{id:'sylvix',name:'Sylvix',sprite:'sylvix',rarity:'common',type:'dark',baseStats:{hp:98,atk:16,def:18,spd:24},ability:{name:'Pilferer',desc:'Chance to reduce enemy ATK at battle start'},basicAttack:'Ghost Nip',specialAttack:'Will-o-Swipe'},
+  tempus:{id:'tempus',name:'Tempus',sprite:'tempus',rarity:'legendary',type:'light',baseStats:{hp:155,atk:20,def:16,spd:36},ability:{name:'Timestep',desc:'Occasionally acts twice in one round'},basicAttack:'Claw Scratch',specialAttack:'Temporal Rend'},
+  terrapinch:{id:'terrapinch',name:'Terrapinch',sprite:'terrapinch',rarity:'uncommon',type:'earth',baseStats:{hp:155,atk:16,def:34,spd:12},ability:{name:'Shell Clamp',desc:'Armored shell resists punishment'},basicAttack:'Snap Bite',specialAttack:'Plate Crush'},
+  thornback:{id:'thornback',name:'Thornback',sprite:'thornback',rarity:'uncommon',type:'earth',baseStats:{hp:162,atk:15,def:36,spd:14},ability:{name:'Briarplate',desc:'Bleeds enemies that deal physical damage'},basicAttack:'Thorn Bash',specialAttack:'Ancient Shell'},
+  thornwyrm:{id:'thornwyrm',name:'Thornwyrm',sprite:'thornwyrm',rarity:'rare',type:'earth',baseStats:{hp:148,atk:22,def:28,spd:16},ability:{name:'Living Thorns',desc:'Thorns punish enemies that strike it'},basicAttack:'Thorn Snap',specialAttack:'Briar Coil'},
+  tsunamole:{id:'tsunamole',name:'Tsunamole',sprite:'tsunamole',rarity:'rare',type:'water',baseStats:{hp:155,atk:22,def:25,spd:18},ability:{name:'Waveback',desc:'Power builds like a rising tide'},basicAttack:'Aqua Claw',specialAttack:'Tsunami Burrow'},
+  tyranus:{id:'tyranus',name:'Tyranus',sprite:'tyranus',rarity:'legendary',type:'earth',baseStats:{hp:255,atk:45,def:25,spd:10},ability:{name:'Supernova',desc:'Below 25% HP explodes with huge power'},basicAttack:'Extinction Bite',specialAttack:'Supernova Blast'},
+  vexcrow:{id:'vexcrow',name:'Vexcrow',sprite:'vexcrow',rarity:'uncommon',type:'dark',baseStats:{hp:90,atk:20,def:10,spd:24},ability:{name:'Stormcall',desc:'25% chance to strike enemy with lightning each round'},basicAttack:'Thunder Peck',specialAttack:'Storm Dive'},
+  voidfin:{id:'voidfin',name:'Voidfin',sprite:'voidfin',rarity:'rare',type:'dark',baseStats:{hp:96,atk:20,def:8,spd:28},ability:{name:'Dark Current',desc:'Reduces enemy DEF over time'},basicAttack:'Void Bite',specialAttack:'Abyss Surge'},
+  voltiki:{id:'voltiki',name:'Voltiki',sprite:'voltiki',rarity:'uncommon',type:'light',baseStats:{hp:98,atk:20,def:13,spd:24},ability:{name:'Charge Tail',desc:'Builds charge for stronger strikes'},basicAttack:'Spark Bite',specialAttack:'Thunder Lash'},
+  wisprat:{id:'wisprat',name:'Wisprat',sprite:'wisprat',rarity:'common',type:'fire',baseStats:{hp:85,atk:19,def:10,spd:24},ability:{name:'Tailflame',desc:'20% chance to burn enemy on contact'},basicAttack:'Scorch Bite',specialAttack:'Wax Splash'},
+};
+
+// ===== FERAL LORE =====
+const FERAL_LORE = {
+  sylvix:"Researchers believe Sylvix doesn't haunt places — it haunts people. Specifically, people who owe it something.",
+  lunnis:"Lunnis only appears fully solid under moonlight. In daylight it looks slightly delayed, like it arrived a moment after itself.",
+  grubbin:"The mushrooms growing from Grubbin's spines are not parasites. Grubbin grew them intentionally. Nobody knows why.",
+  flicket:"Flicket's belly light has been used by lost travelers for centuries. Flicket charges for this service in flies.",
+  dustmaw:"Dustmaw doesn't hide in the sand. The sand hides in Dustmaw.",
+  bramblehog:"Bramblehog charges through thick brush without slowing. The forest tends to get out of its way.",
+  voltiki:"Voltiki stores electricity in its tail. When excited, it sparks uncontrollably and shocks everything nearby.",
+  dustwing:"Dustwing drifts on unseen currents, vanishing in dry air. You often notice the dust before you see it.",
+  riptide:"Riptide moves like a living wave. Where it appears, the air grows heavy and the ground feels damp.",
+  ironmaw:"Ironmaw's jaws can crush stone with ease. It rarely moves, but when it does, the earth knows.",
+  astrael:"Astrael radiates a quiet cosmic energy. Those who encounter it often feel watched by something far greater.",
+  pebblox:"When rolled into a ball, Pebblox is completely indistinguishable from a river stone. It uses this mostly for naps.",
+  wisprat:"Wisprat's tail flame never goes out, even underwater. Scientists find this deeply upsetting.",
+  cluckle:"Cluckle doesn't mean to zap things. It just gets excited. Everything gets zapped when Cluckle gets excited.",
+  mossfin:"Mossfin walked out of the ocean 400 years ago and never looked back. The ocean has not forgiven it.",
+  snarlpup:"Snarlpup wants to be your friend. The thorns are not intentional. The thorns are very much intentional.",
+  snipsnap:"Snipsnap cuts things it dislikes. Snipsnap dislikes most things.",
+  puffalo:"Puffalo is 80% fluff, 20% stubbornness, and somehow heavier than both.",
+  glintbug:"Glintbug flickers between here and somewhere slightly shinier.",
+  mudillo:"Mudillo rolls through mud for protection. Also because it enjoys the drama.",
+  coralwing:"Coralwing nests at the bottom of the ocean and hunts at the top of the sky. Nobody has explained how.",
+  thornback:"Thornback has been alive for 600 years. It has seen empires fall. It is not impressed by you.",
+  cindermane:"Cindermane's mane has been burning since birth. Vets are baffled. Cindermane seems fine with it.",
+  glowtail:"Glowtail's antlers predict the weather. Unfortunately they only predict weather from three years ago.",
+  bogsnap:"Bogsnap's vines grow back within hours of being cut. Bogsnap finds pruning deeply offensive.",
+  vexcrow:"Vexcrow doesn't cause storms. It just arrives right before them, every single time, without explanation.",
+  mirewing:"Mirewing has no reflection of its own. It borrows yours.",
+  embertoad:"Embertoad secretes liquid magma instead of typical toad mucus. Herpetologists have stopped asking questions.",
+  duskfang:"Duskfang casts no shadow. Researchers believe it ate its own.",
+  embrak:"Embrak has never been knocked down in recorded history. Embrak has also never been in a hurry.",
+  stonox:"Stonox moves at the speed of a glacier. Also with the force of one.",
+  starclaw:"Starclaw's feathers rearrange nightly into different star patterns. Astronomers call these constellations wrong. Starclaw disagrees.",
+  voidfin:"Voidfin swims through darkness the way other sharks swim through water. It finds light inconvenient.",
+  pyremanx:"Pyremanx has no tail, which it considers an upgrade. More room for fire.",
+  abysselk:"Abysselk descended into the ocean depths millennia ago. Something down there changed it. It doesn't talk about it.",
+  galehawk:"Galehawk's personal tornado has been clocked at 140mph. Galehawk considers this a light breeze.",
+  nebulodon:"Nebulodon existed before the stars. The stars are catching up.",
+  riftserpent:"Riftserpent exists in seventeen dimensions simultaneously. In most of them it is also winning.",
+  ashenwing:"Ashenwing has died four times. Each time something slightly different came back.",
+  hexcoon:"Hexcoon built its own jetpack from stolen parts. The warranty is void. Hexcoon voided it on purpose.",
+  tempus:"Tempus was here before you arrived. Tempus will be here after you leave. Tempus is currently judging your life choices.",
+  detonax:"Scientists theorize Detonax's claws contain compressed unstable energy from the earth's core. Detonax does not theorize. Detonax acts.",
+  tyranus:"Scientists call it a mass extinction event. Tyranus calls it Tuesday.",
+  singeet:"A quick-footed ember ferret that leaves tiny scorch marks wherever it runs.",
+  drizzlefin:"A playful fish that follows rainfall, appearing wherever fresh water gathers.",
+  lumipup:"A glowing pup that radiates warmth and comfort to those nearby.",
+  grubrock:"A chunky stone grub that burrows slowly, leaving cracked earth in its wake.",
+  grimelk:"A towering shadow elk whose silent presence chills the air around it.",
+  burrowl:"A strange burrowing creature that hunts underground with silent precision.",
+  scorchling:"A tiny flame spirit that flickers wildly, never staying still for long.",
+  marshhorn:"A swamp-dwelling beast whose antlers drip with mud and moss.",
+  flarelynx:"A fierce predator with heat glowing from its ears and claws.",
+  gravemole:"A dark burrower that thrives in grave-soaked soil and forgotten places.",
+  terrapinch:"A stubborn snapping turtle with a shell hardened like stone.",
+  glimmeray:"A radiant floating ray that drifts silently through the air.",
+  smoldursa:"A smoky bear whose body smolders with slow-burning embers.",
+  kelpcat:"A sleek hunter cloaked in flowing seaweed and ocean currents.",
+  shardillo:"A rolling creature covered in sharp, glistening crystal plates.",
+  blazehart:"A noble stag whose blazing antlers burn with untamed fire.",
+  moonclaw:"A silent panther marked by glowing crescents of moonlight.",
+  tsunamole:"A burrowing beast that surges forward like a crashing wave.",
+  solgriff:"A young griffin touched by sunlight, shining with radiant energy.",
+  obsidianx:"A hardened predator formed from volcanic glass and molten cracks.",
+  frostgulp:"A massive bird that stores freezing winds within its enormous beak.",
+  thornwyrm:"A writhing serpent covered in living thorns and creeping vines.",
+  emberdrake:"A chubby dragon whose belly glows with a steady internal flame.",
+  moonreign:"A regal lion crowned in moonlight, ruling with silent authority.",
+  abyssmoth:"A massive moth whose wings seem to swallow light itself.",
+  crystox:"A colossal ox embedded with radiant crystals that hum with power.",
+  stormkraken:"A floating squid crackling with lightning, surrounded by storm clouds.",
+  ecliptor:"A legendary wolf embodying the balance of light and darkness in an eternal eclipse.",
+  solaryn:"A radiant phoenix whose blazing wings shine like the sun itself.",
+  primordra:"An ancient dragon said to carry entire ecosystems upon its back.",
+};
+
+// ===== FLAVOR TEXT POOLS =====
+const DEATH_MESSAGES = [
+  "The wild reclaims its own...",
+  "Their spirit returns to the Feral Age.",
+  "A brave soul lost to the hunt.",
+  "Some Ferals were never meant to be tamed.",
+  "They fought well. The wilds remember.",
+  "Even legends fall.",
+  "Gone, but their battles echo on.",
+  "The Feral Age is cruel to the bold.",
+];
+const TRAP_FAIL_MESSAGES = [
+  "Whatever was here got away. Sneaky little thing.",
+  "The trap was empty. Something was watching though.",
+  "Gone. Like it was never there.",
+  "You can almost hear it laughing.",
+  "The bait was eaten. The trap was not triggered. Impressive.",
+  "Nothing. Just paw prints leading nowhere.",
+];
+const LEVEL_UP_MESSAGES = [
+  "Your instincts sharpen.",
+  "The Ferals sense your growing power.",
+  "You are becoming something the wilds respect.",
+  "A new level. A new legend forming.",
+  "The hunt gets easier. The prey gets harder.",
+];
+const SHINY_MESSAGES = [
+  "This one is different. Special. Keep it safe.",
+  "A rare variant — the wilds are generous today.",
+  "You may never see another like it.",
+  "Something about this one caught the light just right.",
+];
+const CATCH_FLAVOR = {
+  common:    ["A wild find!", "Not bad for a day's work.", "They struggle, then settle."],
+  uncommon:  ["A worthy catch!", "Harder to find than most.", "The trap held. Barely."],
+  rare:      ["Incredible! A rare Feral!", "These don't come along often.", "Your trap was ready for this moment."],
+  epic:      ["An epic catch! Legends speak of this!", "Few tamers ever see one of these.", "The Feral Age bows its head."],
+  legendary: ["LEGENDARY! The world trembles!", "Songs will be written about this day.", "You have caught something ancient and impossible."],
+};
+
+function randomFrom(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+// ===== ITEMS =====
+const ITEMS_DATA = {
+  trinkets: [
+    { id:'old_socks',       name:'Old Socks',           icon:'🧦', rarity:'common',    type:'trinket', effect:{def:1},           price:10,   desc:'+1 DEF (better than nothing!)' },
+    { id:'bent_coin',       name:'Bent Coin',            icon:'🪙', rarity:'common',    type:'trinket', effect:{atk:1},           price:10,   desc:'+1 ATK' },
+    { id:'crow_feather',    name:'Crow Feather',         icon:'🪶', rarity:'common',    type:'trinket', effect:{spd:1},           price:10,   desc:'+1 SPD' },
+    { id:'pebble_charm',    name:'Pebble Charm',         icon:'🪨', rarity:'common',    type:'trinket', effect:{def:2},           price:150,  desc:'+2 DEF' },
+    { id:'dried_flower',    name:'Dried Flower',         icon:'🌸', rarity:'common',    type:'trinket', effect:{hp:3},            price:300,  desc:'+3 HP' },
+    { id:'cracked_amulet',  name:'Cracked Amulet',       icon:'📿', rarity:'uncommon',  type:'trinket', effect:{def:3},           price:150,  desc:'+3 DEF' },
+    { id:'wolf_tooth',      name:'Wolf Tooth Necklace',  icon:'🦷', rarity:'uncommon',  type:'trinket', effect:{atk:3},           price:150,  desc:'+3 ATK' },
+    { id:'tattered_scarf',  name:'Tattered Scarf',       icon:'🧣', rarity:'uncommon',  type:'trinket', effect:{hp:5},            price:150,  desc:'+5 HP' },
+    { id:'lucky_mushroom',  name:'Lucky Mushroom',       icon:'🍄', rarity:'uncommon',  type:'trinket', effect:{hp:4,spd:2},      price:300,  desc:'+4 HP +2 SPD' },
+    { id:'bone_ring',       name:'Bone Ring',            icon:'💀', rarity:'uncommon',  type:'trinket', effect:{atk:2,def:2},     price:300,  desc:'+2 ATK +2 DEF' },
+    { id:'iron_bangle',     name:'Iron Bangle',          icon:'⛓️', rarity:'uncommon',  type:'trinket', effect:{def:4,hp:3},      price:600,  desc:'+4 DEF +3 HP' },
+    { id:'swift_boots',     name:'Swift Boots',          icon:'👢', rarity:'uncommon',  type:'trinket', effect:{spd:4},           price:600,  desc:'+4 SPD' },
+    { id:'battle_wrap',     name:'Battle Wrap',          icon:'🥊', rarity:'uncommon',  type:'trinket', effect:{atk:4},           price:600,  desc:'+4 ATK' },
+    { id:'glowstone',       name:'Glowstone Pendant',    icon:'💠', rarity:'rare',      type:'trinket', effect:{def:5,hp:5},      price:600,  desc:'+5 DEF +5 HP' },
+    { id:'fang_guard',      name:'Fang Guard',           icon:'⚔️', rarity:'rare',      type:'trinket', effect:{atk:5},           price:600,  desc:'+5 ATK' },
+    { id:'frozen_tear',     name:'Frozen Tear',          icon:'🧊', rarity:'rare',      type:'trinket', effect:{def:4,spd:3},     price:900,  desc:'+4 DEF +3 SPD' },
+    { id:'runic_band',      name:'Runic Band',           icon:'🔮', rarity:'rare',      type:'trinket', effect:{atk:4,spd:4},     price:1200, desc:'+4 ATK +4 SPD' },
+    { id:'sapphire_pin',    name:'Sapphire Pin',         icon:'💙', rarity:'rare',      type:'trinket', effect:{hp:12,def:3},     price:1200, desc:'+12 HP +3 DEF' },
+    { id:'stormband',       name:'Stormband',            icon:'⚡', rarity:'epic',      type:'trinket', effect:{spd:8,atk:5},     price:1200, desc:'+8 SPD +5 ATK' },
+    { id:'void_shard',      name:'Void Shard',           icon:'🌑', rarity:'epic',      type:'trinket', effect:{atk:7,def:4},     price:1200, desc:'+7 ATK +4 DEF' },
+    { id:'obsidian_claw',   name:'Obsidian Claw',        icon:'🖤', rarity:'epic',      type:'trinket', effect:{atk:8,def:6},     price:2500, desc:'+8 ATK +6 DEF' },
+    { id:'celestial_ring',  name:'Celestial Ring',       icon:'🌙', rarity:'epic',      type:'trinket', effect:{spd:10,hp:8},     price:2500, desc:'+10 SPD +8 HP' },
+    { id:'hollow_crown',    name:'Hollow Crown',         icon:'👑', rarity:'legendary', type:'trinket', effect:{atk:10,def:10,spd:10,hp:10}, price:9000, desc:'+10 ALL STATS' },
+    { id:'ancient_talisman',name:'Ancient Talisman',     icon:'🗿', rarity:'legendary', type:'trinket', effect:{atk:8,def:8,spd:6}, price:9000, desc:'+8 ATK +8 DEF +6 SPD' },
+  ],
+  essences: [
+    { id:'murky',    name:'Murky Essence',    icon:'🌑', rarity:'common',   type:'essence', boost:{atk:4},        decline:{spd:3},       price:500,  desc:'+ATK / -SPD' },
+    { id:'pale',     name:'Pale Essence',     icon:'🌫️', rarity:'common',   type:'essence', boost:{def:4},        decline:{atk:3},       price:500,  desc:'+DEF / -ATK' },
+    { id:'rushing',  name:'Rushing Essence',  icon:'💨', rarity:'common',   type:'essence', boost:{spd:5},        decline:{def:3},       price:500,  desc:'+SPD / -DEF' },
+    { id:'blazing',  name:'Blazing Essence',  icon:'🔥', rarity:'common',   type:'essence', boost:{atk:5},        decline:{def:4},       price:500,  desc:'+ATK / -DEF' },
+    { id:'bulky',    name:'Bulky Essence',    icon:'🌿', rarity:'uncommon', type:'essence', boost:{hp:10},        decline:{spd:4},       price:1000, desc:'+HP / -SPD' },
+    { id:'sharp',    name:'Sharp Essence',    icon:'🔪', rarity:'uncommon', type:'essence', boost:{atk:6},        decline:{hp:8},        price:1000, desc:'+ATK / -HP' },
+    { id:'rooted',   name:'Rooted Essence',   icon:'🌳', rarity:'uncommon', type:'essence', boost:{hp:8,def:4},   decline:{atk:4},       price:1000, desc:'+HP +DEF / -ATK' },
+    { id:'ghostly',  name:'Ghostly Essence',  icon:'👻', rarity:'rare',     type:'essence', boost:{spd:8},        decline:{atk:5},       price:3000, desc:'+SPD / -ATK' },
+    { id:'ancient',  name:'Ancient Essence',  icon:'🗿', rarity:'rare',     type:'essence', boost:{def:8,hp:5},   decline:{spd:6},       price:3000, desc:'+DEF +HP / -SPD' },
+    { id:'spectral', name:'Spectral Essence', icon:'👁️', rarity:'rare',     type:'essence', boost:{spd:10,atk:4}, decline:{hp:12},       price:3000, desc:'+SPD +ATK / -HP' },
+    { id:'balanced', name:'Balanced Essence', icon:'⚖️', rarity:'rare',     type:'essence', boost:{atk:5,def:5,spd:5}, decline:{hp:10}, price:3000, desc:'+ATK +DEF +SPD / -HP' },
+    { id:'volatile', name:'Volatile Essence', icon:'💥', rarity:'epic',     type:'essence', boost:{atk:12},       decline:{def:8,hp:10}, price:5000, desc:'+ATK / -DEF -HP (high risk!)' },
+    { id:'cursed',   name:'Cursed Essence',   icon:'💀', rarity:'epic',     type:'essence', boost:{atk:15,spd:8}, decline:{def:10,hp:15},price:5000, desc:'+ATK +SPD / -DEF -HP (extreme risk!)' },
+  ],
+  healing: [
+    { id:'wild_herb',     name:'Wild Herb',     icon:'🌿', rarity:'common',    type:'healing', healAmount:15,  healAll:false, price:10,  desc:'Restores 15 HP to one Feral' },
+    { id:'honey_jar',     name:'Honey Jar',     icon:'🍯', rarity:'common',    type:'healing', healAmount:20,  healAll:false, price:15,  desc:'Restores 20 HP to one Feral' },
+    { id:'bramble_salve', name:'Bramble Salve', icon:'🌿', rarity:'common',    type:'healing', healAmount:25,  healAll:false, price:20,  desc:'Restores 25 HP to one Feral' },
+    { id:'tonic',         name:'Tonic',         icon:'🧪', rarity:'uncommon',  type:'healing', healAmount:35,  healAll:false, price:30,  desc:'Restores 35 HP to one Feral' },
+    { id:'hearty_meal',   name:'Hearty Meal',   icon:'🍖', rarity:'uncommon',  type:'healing', healAmount:20,  healAll:true,  price:60,  desc:'Restores 20 HP to ALL your Ferals' },
+    { id:'elixir',        name:'Elixir',        icon:'⚗️', rarity:'rare',      type:'healing', healAmount:999, healAll:false, price:50,  desc:'Fully restores HP to one Feral' },
+    { id:'revive_tonic',  name:'Revive Tonic',  icon:'🫙', rarity:'rare',      type:'healing', healAmount:60,  healAll:false, price:60,  desc:'Restores 60 HP to one Feral' },
+    { id:'feast',         name:'Grand Feast',   icon:'🍗', rarity:'rare',      type:'healing', healAmount:40,  healAll:true,  price:100, desc:'Restores 40 HP to ALL your Ferals' },
+    { id:'soul_ember',    name:'Soul Ember',    icon:'🕯️', rarity:'epic',      type:'revival',                               price:100, desc:'Revives a fallen Feral with 25% HP' },
+    { id:'soul_crystal',  name:'Soul Crystal',  icon:'💎', rarity:'legendary', type:'revival',                               price:80,  desc:'Revives a fallen Feral with 75% HP' },
+  ],
+  stones: [
+    { id:'emberstone',   name:'Emberstone',   icon:'🔥', rarity:'uncommon', type:'stone', effect:'burn',      price:500,  desc:'Adds burn chance on hit' },
+    { id:'shockstone',   name:'Shockstone',   icon:'⚡', rarity:'uncommon', type:'stone', effect:'paralyze',  price:500,  desc:'Adds paralyze chance on hit' },
+    { id:'luckstone',    name:'Luckstone',    icon:'🍀', rarity:'uncommon', type:'stone', effect:'luck',      price:777,  desc:'Random bonus effect each battle' },
+    { id:'poisonstone',  name:'Poisonstone',  icon:'☠️', rarity:'uncommon', type:'stone', effect:'poison',    price:500,  desc:'Adds poison chance on hit' },
+    { id:'bleedstone',   name:'Bleedstone',   icon:'🩸', rarity:'uncommon', type:'stone', effect:'bleed',     price:500,  desc:'Adds bleed chance on hit' },
+    { id:'shadowstone',  name:'Shadowstone',  icon:'🌑', rarity:'rare',     type:'stone', effect:'special',   price:800,  desc:'Physical → Special attack' },
+    { id:'ragestone',    name:'Ragestone',    icon:'😤', rarity:'rare',     type:'stone', effect:'rage',      price:800,  desc:'ATK increases as HP drops' },
+    { id:'froststone',   name:'Froststone',   icon:'❄️', rarity:'rare',     type:'stone', effect:'freeze',    price:1000, desc:'15% chance to freeze enemy for 1 round' },
+    { id:'bloodstone',   name:'Bloodstone',   icon:'🩸', rarity:'rare',     type:'stone', effect:'lifesteal', price:2000, desc:'Heal 20% of damage dealt' },
+    { id:'glassstone',   name:'Glassstone',   icon:'💎', rarity:'rare',     type:'stone', effect:'recoil',    price:2000, desc:'+50% damage but take recoil' },
+    { id:'choicestone',  name:'Choicestone',  icon:'⚖️', rarity:'rare',     type:'stone', effect:'choice',    price:2000, desc:'+30% damage, locked attack style' },
+    { id:'mirrorstone',  name:'Mirrorstone',  icon:'🪞', rarity:'rare',     type:'stone', effect:'reflect',   price:2000, desc:'Reflects 15% damage back' },
+    { id:'thornstone',   name:'Thornstone',   icon:'🌵', rarity:'rare',     type:'stone', effect:'thorns',    price:5000, desc:'Returns 20% damage to attacker' },
+    { id:'swiftstone',   name:'Swiftstone',   icon:'💨', rarity:'rare',     type:'stone', effect:'swift',     price:5000, desc:'+20% SPD in battle' },
+    { id:'ironstone',    name:'Ironstone',    icon:'🛡️', rarity:'rare',     type:'stone', effect:'iron',      price:5000, desc:'Reduces all damage taken by 3 flat' },
+    { id:'voidstone',    name:'Voidstone',    icon:'🕳️', rarity:'epic',     type:'stone', effect:'void',      price:4000, desc:'Ignores 30% of enemy DEF' },
+    { id:'twinstone',    name:'Twinstone',    icon:'✌️', rarity:'epic',     type:'stone', effect:'double',    price:4000, desc:'10% chance to attack twice in one round' },
+    { id:'drainstone',   name:'Drainstone',   icon:'🌀', rarity:'epic',     type:'stone', effect:'drain',     price:7000, desc:'Each hit drains 5 SP from enemy' },
+    { id:'berserkstone', name:'Berserkstone', icon:'💢', rarity:'epic',     type:'stone', effect:'berserk',   price:7000, desc:'+40% ATK but take 10% more damage' },
+    { id:'nullstone',    name:'Nullstone',    icon:'⬛', rarity:'epic',     type:'stone', effect:'null',      price:7000, desc:'Prevents all status effects on your Feral' },
+    { id:'crownstone',   name:'Crownstone',   icon:'👑', rarity:'legendary',type:'stone', effect:'crown',     price:9000, desc:'All stats boosted by 15% in battle' },
+  ],
+};
+
+// ===== FISH DATA =====
+const FISH_DATA = [
+  { id:'minnow',     name:'Minnow',       icon:'🐟', rarity:'common',    healHp:10,  avgLen:2,  avgWt:0.4,  sigma:0.35, speed:1.8, chance:0.55 },
+  { id:'crawfish',   name:'Crawfish',     icon:'🦐', rarity:'common',    healHp:15,  avgLen:4,  avgWt:0.5,  sigma:0.35, speed:2.0, chance:0.50 },
+  { id:'sunfish',    name:'Sunfish',      icon:'🐠', rarity:'common',    healHp:25,  avgLen:8,  avgWt:1.5,  sigma:0.30, speed:2.3, chance:0.45 },
+  { id:'pufferfish', name:'Pufferfish',   icon:'🐡', rarity:'uncommon',  healHp:20,  avgLen:10, avgWt:2.0,  sigma:0.30, speed:2.6, chance:0.38 },
+  { id:'snapper',    name:'Snapper',      icon:'🐢', rarity:'uncommon',  healHp:35,  avgLen:14, avgWt:3.0,  sigma:0.28, speed:3.0, chance:0.30 },
+  { id:'riverfin',   name:'Riverfin',     icon:'🐬', rarity:'rare',      healHp:50,  avgLen:20, avgWt:6.0,  sigma:0.25, speed:3.5, chance:0.18 },
+  { id:'deepfin',    name:'Deepfin',      icon:'🦈', rarity:'epic',      healHp:80,  avgLen:36, avgWt:18.0, sigma:0.22, speed:4.2, chance:0.08 },
+  { id:'kraken',     name:'Kraken Catch', icon:'🐙', rarity:'legendary', healHp:999, avgLen:48, avgWt:35.0, sigma:0.20, speed:5.2, chance:0.02 },
+  { id:'goldfish',   name:'Goldfish',     icon:'🌟', rarity:'legendary', healHp:0,   avgLen:3,  avgWt:0.6,  sigma:0.25, speed:5.0, chance:0.01 },
+];
+
+// ===== PLAYERS =====
+const PLAYERS = [
+  { id:'player1', name:'Coach Levi', icon:'👑', pin:'3214' },
+  { id:'player2', name:'Evan',       icon:'⚡', pin:'0417' },
+  { id:'player3', name:'Reid',       icon:'🔥', pin:'0119' },
+  { id:'player4', name:'Lincoln B',  icon:'🐺', pin:'0808' },
+  { id:'player5', name:'Eskridge',   icon:'🦊', pin:'1212' },
+  { id:'player6', name:'Orner',      icon:'🐉', pin:'0000' },
+];
+
+// ===== FORAGE MATERIALS =====
+const FORAGE_MATERIALS = [
+  { id:'brambleleaf',  name:'Bramble Leaf',  icon:'🌿', rarity:'common',   minLevel:1, desc:'A common herb found at forest edges.' },
+  { id:'mudroot',      name:'Mud Root',       icon:'🪨', rarity:'common',   minLevel:1, desc:'Chewy root pulled from boggy soil.' },
+  { id:'glowcap',      name:'Glowcap',        icon:'🍄', rarity:'common',   minLevel:1, desc:'A faintly luminous mushroom.' },
+  { id:'stingweed',    name:'Stingweed',      icon:'🌱', rarity:'common',   minLevel:1, desc:'Prickly, pungent, and oddly useful.' },
+  { id:'silkpetal',    name:'Silk Petal',     icon:'🌸', rarity:'uncommon', minLevel:2, desc:'A delicate petal with healing oils.' },
+  { id:'embermoss',    name:'Ember Moss',     icon:'🔥', rarity:'uncommon', minLevel:2, desc:'Warm to the touch. Smells like smoke.' },
+  { id:'moonshade',    name:'Moonshade Fern', icon:'🌙', rarity:'uncommon', minLevel:3, desc:'Only uncurls in low light.' },
+  { id:'voidbloom',    name:'Void Bloom',     icon:'🌑', rarity:'rare',     minLevel:4, desc:'Pulls light toward itself. Handle carefully.' },
+  { id:'crystalspore', name:'Crystal Spore',  icon:'💠', rarity:'rare',     minLevel:4, desc:'Hardened spores with potent properties.' },
+  { id:'ancientbark',  name:'Ancient Bark',   icon:'🪵', rarity:'rare',     minLevel:5, desc:'Shed from trees older than memory.' },
+];
+
+// ===== HERBLORE RECIPES =====
+const HERBLORE_RECIPES = [
+  { id:'brew_herb',  name:'Wild Herb',   icon:'🌿', minLevel:1, ingredients:['brambleleaf','mudroot'],               result:'wild_herb',   desc:'Brew a Wild Herb — restores 15 HP to one Feral.' },
+  { id:'brew_tonic', name:'Tonic',       icon:'🧪', minLevel:2, ingredients:['silkpetal','glowcap','stingweed'],     result:'tonic',       desc:'Brew a Tonic — restores 35 HP to one Feral.' },
+  { id:'brew_elixir',name:'Elixir',      icon:'⚗️', minLevel:4, ingredients:['moonshade','crystalspore','embermoss'],result:'elixir',      desc:'Brew an Elixir — fully restores HP to one Feral.' },
+  { id:'brew_meal',  name:'Hearty Meal', icon:'🍖', minLevel:3, ingredients:['ancientbark','mudroot','glowcap'],     result:'hearty_meal', desc:'Brew a Hearty Meal — restores 20 HP to ALL Ferals.' },
+  { id:'brew_ember', name:'Soul Ember',  icon:'🕯️', minLevel:5, ingredients:['voidbloom','embermoss','ancientbark'], result:'soul_ember',  desc:'Brew a Soul Ember — revives a fallen Feral with 25% HP.' },
+];
+
+// ===== TRAP TIERS =====
+const TRAP_TIERS = [
+  { id:'basic',       name:'Basic Trap',      icon:'🪤', escapeChance:7, cost:0,    desc:'7% escape chance' },
+  { id:'reinforced',  name:'Reinforced Trap', icon:'🔧', escapeChance:4, cost:200,  desc:'4% escape chance' },
+  { id:'masterwork',  name:'Masterwork Trap', icon:'⚙️', escapeChance:1, cost:500,  desc:'1% escape chance' },
+  { id:'legendary',   name:'Legendary Trap',  icon:'💎', escapeChance:0, cost:1500, desc:'0% escape chance!' },
+];
+
+// ===== XP TABLE (OSRS-style) =====
+function xpForLevel(lvl) {
+  let total = 0;
+  for(let i = 1; i < lvl; i++) total += Math.floor(i + 300 * Math.pow(2, i/7));
+  return Math.floor(total / 4);
+}
+function getLevelFromXp(xp) {
+  let lvl = 1;
+  while(lvl < 99 && xpForLevel(lvl+1) <= xp) lvl++;
+  return lvl;
+}
+function getXpToNextLevel(xp) {
+  const lvl = getLevelFromXp(xp);
+  return lvl >= 99 ? 0 : xpForLevel(lvl+1) - xp;
+}
+function getXpProgress(xp) {
+  const lvl = getLevelFromXp(xp);
+  if(lvl >= 99) return 100;
+  const curr = xpForLevel(lvl), next = xpForLevel(lvl+1);
+  return Math.round(((xp - curr) / (next - curr)) * 100);
+}
+
+// ===== STATE =====
+let currentPlayer   = null;
+let playerData      = null;
+let pinInput        = '';
+let selectedPlayerIdx = -1;
+let battleState     = null;
+let battleInterval  = null;
+let trapInterval    = null;
+let restInterval    = null;
+let currentBattleEnemy = null;
+let audioCtx        = null;
+let dungeonState    = null;
+let forageInterval2 = null;
+
+// Fishing state
+let fishingActive      = false;
+let fishingBarInterval = null;
+let fishingLinePos     = 0;
+let fishingLineDir     = 1;
+let fishingLineSpeed   = 2.0;
+let fishingPendingFish = null;
+
+// ===== SOUND ENGINE =====
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq, type, duration, volume=0.3, delay=0) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(volume, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + duration);
+  } catch(e) {}
+}
+function soundHit()     { playTone(220,'square',0.08,0.25); playTone(180,'square',0.06,0.2,0.05); }
+function soundSpecial() { playTone(440,'square',0.06,0.2); playTone(550,'square',0.06,0.2,0.06); playTone(660,'square',0.1,0.25,0.12); }
+function soundVictory() { [523,659,784,1047].forEach((n,i)=>playTone(n,'square',0.15,0.25,i*0.12)); }
+function soundDefeat()  { playTone(300,'square',0.1,0.25); playTone(250,'square',0.1,0.25,0.12); playTone(200,'square',0.2,0.25,0.24); }
+function soundTame()    { [392,494,587,784].forEach((n,i)=>playTone(n,'sine',0.12,0.2,i*0.1)); }
+function soundFlee()    { playTone(400,'square',0.05,0.2); playTone(300,'square',0.05,0.2,0.06); playTone(200,'square',0.1,0.2,0.12); }
+function soundHeal()    { playTone(523,'sine',0.08,0.2); playTone(659,'sine',0.08,0.2,0.08); playTone(784,'sine',0.12,0.2,0.16); }
+function soundSwap()    { playTone(350,'square',0.06,0.2); playTone(500,'square',0.08,0.2,0.07); }
+function soundShiny()   { [523,659,784,1047,1319].forEach((n,i)=>playTone(n,'sine',0.1,0.15,i*0.08)); }
+function soundCatch()   { playTone(392,'square',0.08,0.2); playTone(523,'square',0.08,0.2,0.09); playTone(659,'sine',0.15,0.2,0.18); }
+
+// ===== CORE HELPERS =====
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function showNotif(msg, color='var(--accent2)') { const n=document.createElement('div'); n.className='notif'; n.style.borderColor=color; n.style.color=color; n.textContent=msg; document.body.appendChild(n); setTimeout(()=>n.remove(),2600); }
+function closeModal(e)  { if(!e||e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').style.display='none'; }
+function openModal(html){ document.getElementById('modalBody').innerHTML=html; document.getElementById('modalOverlay').style.display='flex'; }
+function getRarityClass(r) { return `rarity-${r}`; }
+function rollRange(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
+function isNighttime()  { const h=new Date().getHours(); return h>=20||h<6; }
+function getFeralDisplayName(feral) { return feral.nickname || feral.name; }
+function getTrapTier()  { return TRAP_TIERS[playerData.trapTier||0] || TRAP_TIERS[0]; }
+
+function getTypeMultiplier(attackerType, defenderType) {
+  if(!attackerType||!defenderType) return 1;
+  if(attackerType==='fire'  && defenderType==='earth') return 1.2;
+  if(attackerType==='earth' && defenderType==='water') return 1.2;
+  if(attackerType==='water' && defenderType==='fire')  return 1.2;
+  if(attackerType==='light' && defenderType==='dark')  return 1.2;
+  if(attackerType==='dark'  && defenderType==='light') return 1.2;
+  return 1;
+}
+
+function getStatWithItems(feral, stat) {
+  let base = feral.stats[stat];
+  if(feral.trinket){ const t=findItem(feral.trinket); if(t?.effect?.[stat]) base+=t.effect[stat]; }
+  if(feral.essence){ const e=findItem(feral.essence); if(e){ if(e.boost?.[stat]) base+=e.boost[stat]; if(e.decline?.[stat]) base-=e.decline[stat]; } }
+  return Math.max(1,base);
+}
+
+function findItem(itemId) {
+  for(const cat of Object.values(ITEMS_DATA)){ const f=cat.find(i=>i.id===itemId); if(f) return f; }
+  return null;
+}
+
+function rollShiny() {
+  const r1=Math.random()<0.01, r2=Math.random()<0.01;
+  if(r1&&r2) return 'both';
+  if(r1) return 'glow';
+  if(r2) return 'invert';
+  return 'none';
+}
+function shinyClass(shiny) {
+  if(shiny==='glow')   return 'shiny-glow';
+  if(shiny==='invert') return 'shiny-invert';
+  if(shiny==='both')   return 'shiny-both';
+  return '';
+}
+function shinyBadgeHTML(shiny) {
+  if(shiny==='glow')   return '<span class="shiny-badge shiny-badge-glow">✨ SHINY</span>';
+  if(shiny==='invert') return '<span class="shiny-badge shiny-badge-invert">🔄 INVERTED</span>';
+  if(shiny==='both')   return '<span class="shiny-badge shiny-badge-both">🌟 ULTRA</span>';
+  return '';
+}
+
+function feralSpriteHTML(feralId, shiny, size='40px') {
+  if(!shiny) shiny='none';
+  const sc = shinyClass(shiny);
+  const fallbacks = {sylvix:'🦊',lunnis:'🐇',grubbin:'🦔',flicket:'🐸',dustmaw:'🦎',pebblox:'🐌',wisprat:'🐀',cluckle:'🐔',mossfin:'🐟',snarlpup:'🐕',coralwing:'🦅',thornback:'🐢',cindermane:'🐎',glowtail:'🦌',bogsnap:'🐊',vexcrow:'🐦',mirewing:'🦇',embertoad:'🐸',duskfang:'🐺',embrak:'🐻',stonox:'🐂',starclaw:'🦅',voidfin:'🦈',pyremanx:'🐈',abysselk:'🦌',galehawk:'🦅',nebulodon:'🦣',riftserpent:'🐍',ashenwing:'🐉',hexcoon:'🦝',tempus:'🐱',detonax:'🦀',tyranus:'🦖'};
+  const fb  = fallbacks[feralId] || '❓';
+  const cls = sc ? ` class="${sc}"` : '';
+  return `<img src="sprites/${feralId}.svg"${cls} style="width:${size};height:${size};image-rendering:pixelated;vertical-align:middle;" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${fb}',style:'font-size:${size};vertical-align:middle;'}))">`;
+}
+
+function generateFeralInstance(feralId, shinyOverride=null) {
+  const base = FERALS_DATA[feralId]; if(!base) return null;
+  const v = ()=>rollRange(-3,3);
+  const shiny = shinyOverride || rollShiny();
+  return {
+    id: feralId+'_'+Date.now(), feralId,
+    name: base.name, nickname: null, sprite: base.sprite,
+    rarity: base.rarity, type: base.type||'earth', shiny,
+    stats: { hp:base.baseStats.hp+v(), atk:base.baseStats.atk+v(), def:base.baseStats.def+v(), spd:base.baseStats.spd+v() },
+    currentHp: base.baseStats.hp,
+    trinket: null, essence: null, stone: null,
+    alive: true, ability: base.ability,
+    basicAttack: base.basicAttack, specialAttack: base.specialAttack,
+    wins: 0, kills: 0,
+  };
+}
+
+// ===== FISH HELPERS =====
+function rollFishSize(avgLen, avgWt, sigma) {
+  const u1=Math.random(), u2=Math.random();
+  const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  return {
+    length: Math.max(0.1, +(avgLen * Math.exp(sigma * z)).toFixed(1)),
+    weight: Math.max(0.01, +(avgWt  * Math.exp(sigma * z * 0.9 + sigma * 0.05 * (Math.random()-0.5))).toFixed(2)),
+  };
+}
+function pickFish() {
+  const roll=Math.random(); let cumulative=0;
+  for(const fish of FISH_DATA){ cumulative+=fish.chance; if(roll<cumulative) return fish; }
+  return FISH_DATA[0];
+}
+function updateBaitDisplay() {
+  const el=document.getElementById('baitCount');
+  if(el) el.textContent='Bait: '+(playerData.bait||0);
+}
+
+// ===== FIREBASE =====
+async function loadPlayerData(pid) {
+  const ref = doc(db,'players',pid);
+  const snap = await getDoc(ref);
+  const defaults = {
+    id:pid, shards:50, tamerXp:0, tamerLevel:1, trapperLevel:1, trapTier:0,
+    ferals:[], inventory:[], trap:null, forage:null, pvpChallenges:[],
+    totalCaught:0, totalShards:0, materials:{},
+    forageLevel:1, forageXp:0, herbloreLevel:1, herbloreXp:0, cauldronUnlocked:false,
+    bait:0, fishCaught:[], fishRecords:{}, totalFishCaught:0,
+  };
+  if(snap.exists()) {
+    const saved = snap.data();
+    const merged = { ...defaults, ...saved };
+    merged.ferals        = Array.isArray(saved.ferals)        ? saved.ferals        : [];
+    merged.inventory     = Array.isArray(saved.inventory)     ? saved.inventory     : [];
+    merged.pvpChallenges = Array.isArray(saved.pvpChallenges) ? saved.pvpChallenges : [];
+    merged.fishCaught    = Array.isArray(saved.fishCaught)    ? saved.fishCaught    : [];
+    merged.shards        = typeof saved.shards   === 'number' ? saved.shards        : defaults.shards;
+    merged.tamerXp       = typeof saved.tamerXp  === 'number' ? saved.tamerXp       : 0;
+    merged.trapTier      = typeof saved.trapTier  === 'number' ? saved.trapTier      : 0;
+    merged.bait          = typeof saved.bait      === 'number' ? saved.bait          : 0;
+    merged.materials     = (saved.materials && typeof saved.materials==='object') ? saved.materials : {};
+    merged.fishRecords   = (saved.fishRecords && typeof saved.fishRecords==='object') ? saved.fishRecords : {};
+    return merged;
+  }
+  await setDoc(ref, defaults);
+  return defaults;
+}
+
+async function savePlayerData() {
+  if(!currentPlayer||!playerData) return;
+  try {
+    if(!Array.isArray(playerData.ferals))        playerData.ferals=[];
+    if(!Array.isArray(playerData.inventory))     playerData.inventory=[];
+    if(!Array.isArray(playerData.pvpChallenges)) playerData.pvpChallenges=[];
+    if(!Array.isArray(playerData.fishCaught))    playerData.fishCaught=[];
+    if(typeof playerData.shards!=='number')      playerData.shards=0;
+    await setDoc(doc(db,'players',currentPlayer.id), playerData);
+  } catch(e) {
+    console.error('Save failed:',e);
+    showNotif('⚠️ Save failed — check connection','var(--red)');
+  }
+}
+
+async function getAllPlayersData() {
+  const results = {};
+  for(const p of PLAYERS){
+    const snap = await getDoc(doc(db,'players',p.id));
+    if(snap.exists()) results[p.id] = snap.data();
+  }
+  return results;
+}
+
+// ===== REST HEALING =====
+function startRestHealing() {
+  if(restInterval) clearInterval(restInterval);
+  restInterval = setInterval(async () => {
+    if(!playerData||battleState) return;
+    let healed = false;
+    (playerData.ferals||[]).forEach(f => {
+      if(f.alive!==false && f.stats?.hp && (f.currentHp??f.stats.hp) < f.stats.hp) {
+        f.currentHp = Math.min(f.stats.hp, (f.currentHp??f.stats.hp) + f.stats.hp/360);
+        healed = true;
+      }
+    });
+    if(healed) {
+      await savePlayerData();
+      if(document.getElementById('tab-roster').classList.contains('active')) renderRoster();
+      if(document.getElementById('tab-home').classList.contains('active'))   renderHome();
+    }
+  }, 120000);
+}
+
+// ===== ENERGY SYSTEM =====
+const ENERGY_MAX      = 7;
+const ENERGY_REGEN_MS = 10 * 60 * 1000;
+
+function getFeralEnergy(feral) {
+  const now=Date.now(), last=feral.lastEnergyUpdate||now;
+  const stored=feral.energy??ENERGY_MAX;
+  if(stored>=ENERGY_MAX) return ENERGY_MAX;
+  return Math.min(ENERGY_MAX, stored + Math.floor((now-last)/ENERGY_REGEN_MS));
+}
+function updateFeralEnergy(feral) {
+  const now=Date.now(), current=getFeralEnergy(feral);
+  feral.energy=current;
+  if(current>=ENERGY_MAX){ feral.lastEnergyUpdate=now; }
+  else { const last=feral.lastEnergyUpdate||now; feral.lastEnergyUpdate=last+Math.floor((now-last)/ENERGY_REGEN_MS)*ENERGY_REGEN_MS; }
+  return current;
+}
+function energyRefillsIn(feral) {
+  if(getFeralEnergy(feral)>=ENERGY_MAX) return null;
+  const last=feral.lastEnergyUpdate||Date.now();
+  return Math.ceil((ENERGY_REGEN_MS-(Date.now()-last)%ENERGY_REGEN_MS)/60000);
+}
