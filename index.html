@@ -1940,6 +1940,15 @@ if(typeMult > 1){
   }
   if(player.feral.feralId==='nebulodon'){ battleState.player.nebulodonCount=(battleState.player.nebulodonCount||0)+1; if(battleState.player.nebulodonCount%3===0){ dmg*=2; addLog(`🌌 Cosmic Crush! Double damage!`,'log-ability'); } }
   if(player.feral.feralId==='detonax'&&isSpecial&&Math.random()<0.4){ dmg=Math.round(dmg*1.5); addLog(`💣 BOMB CLAWS EXPLODE!`,'log-ability'); }
+  // ===== NEW FERAL OFFENSIVE ABILITIES =====
+if(player.feral.feralId==='singeet'&&Math.random()<0.2){ dmg+=4; addLog(`🔥 Hot Feet! Singeet strikes fast!`,'log-ability'); }
+if(player.feral.feralId==='scorchling'&&Math.random()<0.25){ dmg+=5; addLog(`🔥 Flickerflame burns hotter!`,'log-ability'); }
+if(player.feral.feralId==='flarelynx'&&Math.random()<0.25){ dmg=Math.round(dmg*1.25); addLog(`🔥 Heat Pounce!`,'log-ability'); }
+if(player.feral.feralId==='blazehart'&&isSpecial){ dmg=Math.round(dmg*1.3); addLog(`🔥 Burning Antlers blaze!`,'log-ability'); }
+if(player.feral.feralId==='solgriff'&&Math.random()<0.25){ dmg+=6; addLog(`☀️ Suncrest empowers the hit!`,'log-ability'); }
+if(player.feral.feralId==='stormkraken'&&Math.random()<0.25){ enemy.paralyzed=true; addLog(`⚡ Storm Tentacles paralyze the enemy!`,'log-ability'); }
+if(player.feral.feralId==='ecliptor'&&Math.random()<0.3){ dmg=Math.round(dmg*1.25); addLog(`🌘 Eclipse Aura twists the battle!`,'log-ability'); }
+if(player.feral.feralId==='solaryn'&&Math.random()<0.25){ dmg=Math.round(dmg*1.3); addLog(`☀️ Sunfire flares!`,'log-ability'); }
   if(player.feral.feralId==='voltiki'){
   player.voltikiCharge=(player.voltikiCharge||0)+1;
   if(player.voltikiCharge>=3){
