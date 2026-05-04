@@ -1,0 +1,54 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes eclipse-pulse {
+  0%,100% { opacity:.4; }
+  50% { opacity:1; }
+}
+@keyframes god-float {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+@keyframes aura-spin {
+  0% { opacity:.4; }
+  50% { opacity:.8; }
+  100% { opacity:.4; }
+}
+</style>
+
+<!-- eclipse ring -->
+<rect x="4" y="2" width="8" height="1" fill="#fde68a" style="animation:eclipse-pulse 1.5s infinite"/>
+<rect x="5" y="3" width="6" height="1" fill="#020617"/>
+<rect x="6" y="2" width="4" height="1" fill="#fef3c7" opacity=".6"/>
+
+<g style="animation:god-float 1.8s ease-in-out infinite;">
+  <!-- body split (light/dark) -->
+  <rect x="6" y="7" width="2" height="5" fill="#020617"/>
+  <rect x="8" y="7" width="2" height="5" fill="#fef3c7"/>
+
+  <!-- torso shading -->
+  <rect x="7" y="8" width="1" height="2" fill="#111827"/>
+  <rect x="8" y="8" width="1" height="2" fill="#fde68a"/>
+
+  <!-- head -->
+  <rect x="5" y="5" width="5" height="3" fill="#020617"/>
+  <rect x="7" y="5" width="2" height="3" fill="#fef3c7"/>
+
+  <!-- snout -->
+  <rect x="4" y="7" width="2" height="1" fill="#020617"/>
+
+  <!-- eyes -->
+  <rect x="6" y="6" width="1" height="1" fill="#a78bfa" style="animation:eclipse-pulse .8s infinite"/>
+  <rect x="8" y="6" width="1" height="1" fill="#facc15" style="animation:eclipse-pulse 1s infinite .2s"/>
+
+  <!-- legs -->
+  <rect x="6" y="12" width="1" height="2" fill="#020617"/>
+  <rect x="9" y="12" width="1" height="2" fill="#fef3c7"/>
+
+  <!-- tail -->
+  <rect x="10" y="9" width="2" height="1" fill="#020617"/>
+  <rect x="12" y="8" width="1" height="1" fill="#fef3c7"/>
+</g>
+
+<!-- aura field -->
+<rect x="4" y="6" width="8" height="7" fill="#a78bfa" opacity=".08" style="animation:aura-spin 2s infinite"/>
+</svg>
