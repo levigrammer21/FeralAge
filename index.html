@@ -1834,6 +1834,11 @@ if(player.feral.feralId==='mudillo'){
   addLog(`🟤 Mud Coat! DEF rose!`,'log-ability');
 }
   dmg=Math.max(1,Math.round(dmg-reduction));
+  const typeMult = getTypeMultiplier(player.feral.type, enemy.type);
+if(typeMult > 1){
+  dmg = Math.round(dmg * typeMult);
+  addLog(`⚡ Type advantage!`,'log-ability');
+}
   if(stone){
     if(stone.effect==='recoil'){ dmg=Math.round(dmg*1.5); player.hp-=Math.round(dmg*0.15); addLog(`💥 Recoil! -${Math.round(dmg*0.15)}HP`,'log-hit'); }
     if(stone.effect==='lifesteal'){ const h=Math.round(dmg*0.2); player.hp=Math.min(player.maxHp,player.hp+h); addLog(`🩸 Lifesteal +${h}HP!`,'log-ability'); }
