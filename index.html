@@ -1714,7 +1714,7 @@ window.startBattle = function(feralId, isDungeon, enemyOverride) {
     const enemyKey=feralKeys[Math.floor(Math.random()*feralKeys.length)];
     const enemyBase=FERALS_DATA[enemyKey];
     const enemyShiny=rollShiny();
-    enemy={feralId:enemyKey,name:enemyBase.name,sprite:enemyKey,rarity:enemyBase.rarity,shiny:enemyShiny,
+    enemy={feralId:enemyKey,name:enemyBase.name,sprite:enemyKey,rarity:enemyBase.rarity,type:enemyBase.type||'earth',shiny:enemyShiny,
       hp:enemyBase.baseStats.hp+rollRange(-5,5),maxHp:0,atk:enemyBase.baseStats.atk+rollRange(-3,3),
       def:enemyBase.baseStats.def+rollRange(-3,3),spd:enemyBase.baseStats.spd+rollRange(-3,3),sp:0,
       basicAttack:enemyBase.basicAttack,specialAttack:enemyBase.specialAttack,ability:enemyBase.ability,
