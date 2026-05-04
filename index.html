@@ -2087,6 +2087,16 @@ if(typeMult > 1){
   if(player.feral.feralId==='cluckle'&&Math.random()<0.25){ enemy.paralyzed=true; addLog(`⚡ Static Feathers! ${enemy.name} paralyzed!`,'log-ability'); }
   if(player.feral.feralId==='wisprat'&&Math.random()<0.2){ enemy.burned=true; addLog(`🔥 Tailflame! ${enemy.name} burned!`,'log-ability'); }
   if(enemy.feralId==='vexcrow'&&Math.random()<0.25){ const bolt=rollRange(8,15); player.hp-=bolt; addLog(`⚡ Stormcall strikes! -${bolt}HP`,'log-ability'); }
+if(player.feral.feralId==='obsidianx'&&Math.random()<0.3){
+  enemy.hp-=5;
+  enemy.burned=true;
+  addLog(`🌋 Lava Cracks burned the enemy! -5HP`,'log-ability');
+}
+
+if(player.feral.feralId==='thornwyrm'&&Math.random()<0.35){
+  enemy.hp-=5;
+  addLog(`🌿 Living Thorns stabbed the enemy! -5HP`,'log-ability');
+}
   player.hp-=dmg;
   if(player.feral.feralId==='ashenwing'&&player.hp<=0&&!battleState.player.ashenwingRevived){ battleState.player.ashenwingRevived=true; player.hp=Math.round(player.maxHp*0.15); addLog(`🔥 Rebirth! Ashenwing survives!`,'log-ability'); }
   addLog(`${isSpecial?'✨':'🔴'} ${enemy.name} used ${isSpecial?enemy.specialAttack:enemy.basicAttack}! -${dmg}HP`,isSpecial?'log-special':'log-hit');
