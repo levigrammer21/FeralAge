@@ -2026,6 +2026,16 @@ if(typeMult > 1){
     if(stone.effect==='double'&&Math.random()<0.1){ dmg*=2; addLog(`✌️ Twinstone double hit!`,'log-ability'); }
     if(stone.effect==='reflect'){ const r=Math.round(dmg*0.15); player.hp=Math.min(player.maxHp,player.hp+r); }
     if(stone.effect==='choice'){ dmg=Math.round(dmg*1.3); }
+    if(stone.effect==='poison'&&Math.random()<0.3){ enemy.poisoned=true; addLog(`☠️ Poisonstone! ${enemy.name} is poisoned!`,'log-ability'); }
+    if(stone.effect==='bleed'&&Math.random()<0.3){ enemy.bleeding=true; addLog(`🩸 Bleedstone! ${enemy.name} is bleeding!`,'log-ability'); }
+    if(stone.effect==='rage'){ const missingHp=player.maxHp-player.hp; const rageBonus=Math.round(missingHp*0.08); dmg+=rageBonus; if(rageBonus>0) addLog(`😤 Ragestone! +${rageBonus} damage from fury!`,'log-ability'); }
+    if(stone.effect==='thorns'){ const thorns=Math.round(dmg*0.2); enemy.hp-=thorns; addLog(`🌵 Thornstone! ${thorns} reflected!`,'log-ability'); }
+    if(stone.effect==='swift'){ dmg=Math.round(dmg*1.2); }
+    if(stone.effect==='iron'){ player.hp=Math.min(player.maxHp,player.hp+3); addLog(`🛡️ Ironstone absorbs damage! +3HP`,'log-ability'); }
+    if(stone.effect==='drain'){ enemy.sp=Math.max(0,(enemy.sp||0)-5); addLog(`🌀 Drainstone drained enemy SP!`,'log-ability'); }
+    if(stone.effect==='berserk'){ dmg=Math.round(dmg*1.4); battleState.player._berserkPenalty=true; addLog(`💢 Berserkstone! Massive hit!`,'log-ability'); }
+    if(stone.effect==='null'){ player.poisoned=false; player.bleeding=false; player.burned=false; player.paralyzed=false; }
+    if(stone.effect==='crown'){ dmg=Math.round(dmg*1.15); }
   }
   if(player.feral.feralId==='nebulodon'){ battleState.player.nebulodonCount=(battleState.player.nebulodonCount||0)+1; if(battleState.player.nebulodonCount%3===0){ dmg*=2; addLog(`🌌 Cosmic Crush! Double damage!`,'log-ability'); } }
   if(player.feral.feralId==='detonax'&&isSpecial&&Math.random()<0.4){ dmg=Math.round(dmg*1.5); addLog(`💣 BOMB CLAWS EXPLODE!`,'log-ability'); }
