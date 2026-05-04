@@ -1,0 +1,49 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes shadow-breathe {
+  0%,100% { opacity:.7; }
+  50% { opacity:1; }
+}
+@keyframes antler-flicker {
+  0%,100% { opacity:.5; }
+  50% { opacity:1; }
+}
+</style>
+
+<!-- shadow mist -->
+<rect x="3" y="13" width="2" height="1" fill="#111827" opacity=".4" style="animation:shadow-breathe 2s infinite"/>
+<rect x="11" y="13" width="2" height="1" fill="#111827" opacity=".4" style="animation:shadow-breathe 2.2s infinite .3s"/>
+
+<!-- body -->
+<rect x="5" y="7" width="7" height="5" fill="#111827"/>
+<rect x="4" y="8" width="2" height="4" fill="#111827"/>
+
+<!-- chest -->
+<rect x="6" y="8" width="4" height="3" fill="#1f2937"/>
+
+<!-- head -->
+<rect x="3" y="5" width="4" height="4" fill="#111827"/>
+<rect x="2" y="6" width="2" height="2" fill="#111827"/>
+
+<!-- eye -->
+<rect x="4" y="6" width="1" height="1" fill="#7c3aed" style="animation:shadow-breathe 1.5s infinite"/>
+
+<!-- antlers -->
+<rect x="3" y="3" width="1" height="3" fill="#374151" style="animation:antler-flicker 1.6s infinite"/>
+<rect x="2" y="2" width="1" height="1" fill="#6d28d9" style="animation:antler-flicker 1.3s infinite"/>
+<rect x="4" y="2" width="1" height="1" fill="#4c1d95" style="animation:antler-flicker 1.5s infinite .2s"/>
+
+<rect x="6" y="3" width="1" height="3" fill="#374151" style="animation:antler-flicker 1.6s infinite .3s"/>
+<rect x="6" y="2" width="1" height="1" fill="#6d28d9" style="animation:antler-flicker 1.4s infinite .4s"/>
+<rect x="7" y="2" width="1" height="1" fill="#4c1d95" style="animation:antler-flicker 1.2s infinite .1s"/>
+
+<!-- legs -->
+<rect x="6" y="12" width="1" height="2" fill="#030712"/>
+<rect x="10" y="12" width="1" height="2" fill="#030712"/>
+
+<!-- tail shadow -->
+<rect x="11" y="9" width="2" height="2" fill="#1f2937"/>
+
+<!-- aura -->
+<rect x="5" y="6" width="7" height="6" fill="#4c1d95" opacity=".15" style="animation:shadow-breathe 2s infinite"/>
+</svg>
