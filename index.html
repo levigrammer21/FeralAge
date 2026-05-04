@@ -1868,6 +1868,31 @@ if(typeMult > 1){
   }
   if(player.feral.feralId==='nebulodon'){ battleState.player.nebulodonCount=(battleState.player.nebulodonCount||0)+1; if(battleState.player.nebulodonCount%3===0){ dmg*=2; addLog(`🌌 Cosmic Crush! Double damage!`,'log-ability'); } }
   if(player.feral.feralId==='detonax'&&isSpecial&&Math.random()<0.4){ dmg=Math.round(dmg*1.5); addLog(`💣 BOMB CLAWS EXPLODE!`,'log-ability'); }
+  if(player.feral.feralId==='voltiki'){
+  player.voltikiCharge=(player.voltikiCharge||0)+1;
+  if(player.voltikiCharge>=3){
+    player.voltikiCharge=0;
+    dmg=Math.round(dmg*1.35);
+    addLog(`⚡ Charge Tail! Voltiki releases stored power!`,'log-ability');
+  }
+}
+
+if(player.feral.feralId==='riptide'){
+  player.riptideStacks=Math.min(6,(player.riptideStacks||0)+1);
+  dmg+=player.riptideStacks;
+  addLog(`🌊 Surging Current! +${player.riptideStacks} damage!`,'log-ability');
+}
+
+if(player.feral.feralId==='ironmaw'){
+  dmg=Math.round(dmg*1.15);
+  addLog(`🪨 Crag Jaw! Ironmaw crushes through armor!`,'log-ability');
+}
+
+if(player.feral.feralId==='astrael'&&Math.random()<0.25){
+  dmg=Math.round(dmg*1.25);
+  player.hp=Math.min(player.maxHp,player.hp+4);
+  addLog(`✨ Starbound! Astrael empowers the strike and heals +4HP!`,'log-ability');
+}
   if(player.feral.feralId === 'snipsnap' && Math.random() < 0.10){
   dmg *= 2;
   addLog(`✂️ Quick Snip! ${getFeralDisplayName(player.feral)} strikes twice!`,'log-ability');
