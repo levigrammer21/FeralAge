@@ -1,0 +1,52 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes mud-drip {
+  0%,100% { opacity:.45; transform:translateY(0px); }
+  50% { opacity:1; transform:translateY(1px); }
+}
+@keyframes swamp-bob {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+</style>
+
+<!-- swamp bubbles -->
+<rect x="2" y="12" width="1" height="1" fill="#22c55e" opacity=".45" style="animation:mud-drip 1.6s infinite"/>
+<rect x="13" y="13" width="1" height="1" fill="#84cc16" opacity=".35" style="animation:mud-drip 1.9s infinite .3s"/>
+
+<g style="animation:swamp-bob 1.7s ease-in-out infinite;">
+  <!-- horns -->
+  <rect x="3" y="4" width="1" height="3" fill="#365314"/>
+  <rect x="2" y="3" width="1" height="1" fill="#65a30d"/>
+  <rect x="7" y="4" width="1" height="3" fill="#365314"/>
+  <rect x="8" y="3" width="1" height="1" fill="#65a30d"/>
+
+  <!-- head -->
+  <rect x="3" y="6" width="5" height="4" fill="#3f6212"/>
+  <rect x="4" y="5" width="3" height="2" fill="#65a30d"/>
+
+  <!-- snout -->
+  <rect x="2" y="8" width="2" height="1" fill="#1f3d16"/>
+
+  <!-- eye -->
+  <rect x="4" y="7" width="1" height="1" fill="#000"/>
+  <rect x="5" y="7" width="1" height="1" fill="#bbf7d0"/>
+
+  <!-- body -->
+  <rect x="7" y="8" width="6" height="4" fill="#365314"/>
+  <rect x="8" y="7" width="4" height="2" fill="#4d7c0f"/>
+  <rect x="8" y="9" width="4" height="2" fill="#65a30d"/>
+
+  <!-- moss patches -->
+  <rect x="9" y="7" width="2" height="1" fill="#84cc16"/>
+  <rect x="11" y="9" width="1" height="1" fill="#22c55e"/>
+
+  <!-- muddy legs -->
+  <rect x="7" y="12" width="1" height="2" fill="#3f2a1d"/>
+  <rect x="11" y="12" width="1" height="2" fill="#3f2a1d"/>
+
+  <!-- mud drips -->
+  <rect x="5" y="9" width="1" height="2" fill="#854d0e" style="animation:mud-drip 1.4s infinite"/>
+  <rect x="10" y="11" width="1" height="1" fill="#854d0e" style="animation:mud-drip 1.8s infinite .2s"/>
+</g>
+</svg>
