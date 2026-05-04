@@ -1769,7 +1769,8 @@ function renderBattleSelect() {
     div.className='select-feral-item';
     div.style.cursor='pointer';
     div.innerHTML=feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')+
-      '<div class="sfi-info"><div class="sfi-name">'+getFeralDisplayName(f)+'</div><div class="sfi-stats">HP: '+(f.currentHp??f.stats?.hp)+'/'+f.stats?.hp+' | ATK:'+f.stats?.atk+' SPD:'+f.stats?.spd+'</div></div>'+
+    '<div class="sfi-stats">HP: '+(f.currentHp??f.stats?.hp)+'/'+f.stats?.hp+' | ATK:'+f.stats?.atk+' SPD:'+f.stats?.spd+'</div>'+
+'<div class="sfi-stats" style="color:var(--gold);">⚡ '+getFeralEnergy(f)+'/'+ENERGY_MAX+' energy</div></div>'+
       '<span class="rarity-badge '+getRarityClass(f.rarity)+'">'+f.rarity.toUpperCase()+'</span>';
 div.addEventListener('click',()=>{
   const energy = getFeralEnergy(f);
