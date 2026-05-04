@@ -1829,6 +1829,20 @@ window.startBattle = function(feralId, isDungeon, enemyOverride) {
   if(isDungeon===undefined) isDungeon=false;
   const feral=(playerData.ferals||[]).find(f=>f.id===feralId);
   if(!feral) return;
+  // Deduct energy
+const feralIdx = (playerData.ferals||[]).findIndex(f=>f.id===feralId);
+if(feralIdx !== -1 && !isDungeon) {
+  updateFeralEnergy(playerData.ferals[feralIdx]);
+  if(playerData.ferals[feralIdx].energy <= 0) {
+    const mins = energyRefillsIn(playerData.ferals[feralIdx]);
+    showNotif(`⚡ No energy! Refills in ${mins}min`, 'var(--red)');
+    renderBattleSelect();
+    return;
+  }
+  playerData.ferals[feralIdx].energy -= 1;
+  playerData.ferals[feralIdx].lastEnergyUpdate = playerData.ferals[feralIdx].lastEnergyUpdate || Date.now();
+  savePlayerData();
+}
 
   // Initialize dungeon state on first room
   if(isDungeon && !dungeonState) dungeonState={ feralId, currentRoom:0 };
