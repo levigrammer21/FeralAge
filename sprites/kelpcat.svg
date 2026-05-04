@@ -1,0 +1,57 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes kelp-sway {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(1px); }
+}
+@keyframes water-glint {
+  0%,100% { opacity:.4; }
+  50% { opacity:1; }
+}
+</style>
+
+<!-- water flecks -->
+<rect x="2" y="5" width="1" height="1" fill="#7dd3fc" opacity=".6" style="animation:water-glint 1.4s infinite"/>
+<rect x="13" y="7" width="1" height="1" fill="#38bdf8" opacity=".5" style="animation:water-glint 1.7s infinite .3s"/>
+
+<!-- body outline -->
+<rect x="5" y="8" width="7" height="4" fill="#064e3b"/>
+<rect x="4" y="9" width="2" height="3" fill="#064e3b"/>
+
+<!-- body fill -->
+<rect x="5" y="8" width="6" height="3" fill="#047857"/>
+<rect x="6" y="7" width="4" height="2" fill="#059669"/>
+
+<!-- head -->
+<rect x="3" y="6" width="4" height="4" fill="#065f46"/>
+<rect x="4" y="5" width="3" height="2" fill="#047857"/>
+
+<!-- ears -->
+<rect x="3" y="5" width="1" height="1" fill="#064e3b"/>
+<rect x="6" y="4" width="1" height="2" fill="#064e3b"/>
+
+<!-- eye -->
+<rect x="4" y="7" width="1" height="1" fill="#000"/>
+<rect x="5" y="7" width="1" height="1" fill="#ccfbf1"/>
+
+<!-- snout -->
+<rect x="2" y="8" width="2" height="1" fill="#022c22"/>
+
+<!-- kelp mane -->
+<g style="animation:kelp-sway 1.6s ease-in-out infinite;">
+  <rect x="5" y="6" width="1" height="3" fill="#84cc16"/>
+  <rect x="7" y="6" width="1" height="4" fill="#65a30d"/>
+  <rect x="9" y="7" width="1" height="3" fill="#84cc16"/>
+</g>
+
+<!-- kelp tail -->
+<g style="animation:kelp-sway 1.3s ease-in-out infinite .2s;">
+  <rect x="11" y="7" width="2" height="1" fill="#047857"/>
+  <rect x="13" y="6" width="1" height="3" fill="#84cc16"/>
+  <rect x="14" y="7" width="1" height="2" fill="#65a30d"/>
+</g>
+
+<!-- legs -->
+<rect x="5" y="12" width="1" height="2" fill="#022c22"/>
+<rect x="9" y="12" width="1" height="2" fill="#022c22"/>
+</svg>
