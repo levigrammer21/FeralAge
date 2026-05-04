@@ -1903,6 +1903,10 @@ function enemyAttacks() {
   if(player.feral.feralId==='galehawk') reduction+=dmg*0.2;
   if(player.feral.feralId==='pebblox'&&player.hp<player.maxHp*0.3) dmg=Math.round(dmg*0.5);
   dmg=Math.max(1,Math.round(dmg-reduction));
+  if(player.feral.feralId==='bramblehog'){
+  dmg=Math.max(1,Math.round(dmg*0.85));
+  addLog(`🌿 Rooted Hide! Damage reduced!`,'log-ability');
+  }
   const typeMult = getTypeMultiplier(enemy.type, player.feral.type);
 if(typeMult > 1){
   dmg = Math.round(dmg * typeMult);
