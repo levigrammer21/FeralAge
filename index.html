@@ -946,6 +946,7 @@ function generateFeralInstance(feralId, shinyOverride=null) {
     nickname: null,
     sprite: base.sprite,
     rarity: base.rarity,
+    type: base.type || 'earth',
     shiny,
     stats: { hp:base.baseStats.hp+variance(), atk:base.baseStats.atk+variance(), def:base.baseStats.def+variance(), spd:base.baseStats.spd+variance() },
     currentHp: base.baseStats.hp,
