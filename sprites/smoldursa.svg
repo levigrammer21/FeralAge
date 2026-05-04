@@ -1,0 +1,56 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes smoke {
+  0%,100% { opacity:.4; transform:translateY(0px); }
+  50% { opacity:.8; transform:translateY(-1px); }
+}
+@keyframes ember {
+  0%,100% { opacity:.6; }
+  50% { opacity:1; }
+}
+@keyframes bear-bob {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+</style>
+
+<!-- smoke wisps -->
+<rect x="3" y="3" width="2" height="1" fill="#6b7280" style="animation:smoke 1.6s infinite"/>
+<rect x="11" y="4" width="2" height="1" fill="#4b5563" style="animation:smoke 1.8s infinite .3s"/>
+
+<g style="animation:bear-bob 1.8s ease-in-out infinite;">
+  <!-- ears -->
+  <rect x="5" y="3" width="1" height="1" fill="#1f2937"/>
+  <rect x="8" y="3" width="1" height="1" fill="#1f2937"/>
+
+  <!-- head -->
+  <rect x="5" y="4" width="4" height="3" fill="#374151"/>
+
+  <!-- snout -->
+  <rect x="4" y="6" width="3" height="2" fill="#1f2937"/>
+  <rect x="5" y="6" width="1" height="1" fill="#6b7280"/>
+
+  <!-- eyes -->
+  <rect x="6" y="5" width="1" height="1" fill="#facc15" style="animation:ember 1s infinite"/>
+  <rect x="7" y="5" width="1" height="1" fill="#facc15" style="animation:ember 1s infinite .2s"/>
+
+  <!-- body (round bear shape) -->
+  <rect x="5" y="7" width="6" height="5" fill="#374151"/>
+  <rect x="6" y="8" width="4" height="3" fill="#4b5563"/>
+
+  <!-- ember belly -->
+  <rect x="7" y="9" width="2" height="2" fill="#ea580c" style="animation:ember 1.2s infinite"/>
+  <rect x="7" y="10" width="2" height="1" fill="#f97316"/>
+
+  <!-- arms -->
+  <rect x="4" y="8" width="2" height="2" fill="#1f2937"/>
+  <rect x="10" y="8" width="2" height="2" fill="#1f2937"/>
+
+  <!-- legs -->
+  <rect x="6" y="12" width="1" height="2" fill="#111827"/>
+  <rect x="9" y="12" width="1" height="2" fill="#111827"/>
+</g>
+
+<!-- shadow -->
+<rect x="5" y="14" width="6" height="1" fill="#000" opacity=".6"/>
+</svg>
