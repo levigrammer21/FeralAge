@@ -1771,7 +1771,15 @@ function renderBattleSelect() {
     div.innerHTML=feralSpriteHTML(f.feralId||f.id,f.shiny||'none','36px')+
       '<div class="sfi-info"><div class="sfi-name">'+getFeralDisplayName(f)+'</div><div class="sfi-stats">HP: '+(f.currentHp??f.stats?.hp)+'/'+f.stats?.hp+' | ATK:'+f.stats?.atk+' SPD:'+f.stats?.spd+'</div></div>'+
       '<span class="rarity-badge '+getRarityClass(f.rarity)+'">'+f.rarity.toUpperCase()+'</span>';
-    div.addEventListener('click',()=>searchForBattle(f.id));
+div.addEventListener('click',()=>{
+  const energy = getFeralEnergy(f);
+  if (energy <= 0) {
+    const mins = energyRefillsIn(f);
+    showNotif(`⚡ ${getFeralDisplayName(f)} has no energy! Refills in ${mins}min`, 'var(--red)');
+    return;
+  }
+  searchForBattle(f.id);
+});
     list.appendChild(div);
   });
 }
