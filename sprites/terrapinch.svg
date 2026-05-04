@@ -1,0 +1,47 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes shell-bob {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+@keyframes clamp-snap {
+  0%,100% { transform:translateX(0px); }
+  50% { transform:translateX(-1px); }
+}
+</style>
+
+<!-- ground grit -->
+<rect x="2" y="13" width="2" height="1" fill="#57534e" opacity=".45"/>
+<rect x="12" y="13" width="2" height="1" fill="#78716c" opacity=".35"/>
+
+<g style="animation:shell-bob 1.8s ease-in-out infinite;">
+  <!-- shell outline -->
+  <rect x="4" y="6" width="9" height="6" fill="#292524"/>
+  <rect x="5" y="5" width="7" height="2" fill="#292524"/>
+
+  <!-- shell fill -->
+  <rect x="5" y="6" width="7" height="5" fill="#365314"/>
+  <rect x="6" y="5" width="5" height="2" fill="#4d7c0f"/>
+  <rect x="6" y="8" width="5" height="2" fill="#65a30d"/>
+
+  <!-- shell plates -->
+  <rect x="6" y="7" width="1" height="3" fill="#1f3d16"/>
+  <rect x="8" y="6" width="1" height="4" fill="#1f3d16"/>
+  <rect x="10" y="7" width="1" height="3" fill="#1f3d16"/>
+
+  <!-- snapping head/jaw -->
+  <g style="animation:clamp-snap 1.2s ease-in-out infinite;">
+    <rect x="2" y="8" width="4" height="3" fill="#3f6212"/>
+    <rect x="1" y="9" width="2" height="1" fill="#292524"/>
+    <rect x="2" y="10" width="3" height="1" fill="#1c1917"/>
+    <rect x="4" y="8" width="1" height="1" fill="#000"/>
+  </g>
+
+  <!-- legs -->
+  <rect x="5" y="12" width="1" height="2" fill="#1c1917"/>
+  <rect x="10" y="12" width="1" height="2" fill="#1c1917"/>
+</g>
+
+<!-- heavy shadow -->
+<rect x="4" y="14" width="9" height="1" fill="#000" opacity=".55"/>
+</svg>
