@@ -1627,8 +1627,8 @@ window.buyTrapUpgrade = async function(tierIdx) {
 };
 
 window.setTrap = async function() {
-  playerData.trap={endTime:Date.now()+1*60*1000,minutes:1};
-  await savePlayerData(); renderTrap(); showNotif('🪤 Trap set! Come back in 1 minute!');
+  playerData.trap={endTime:Date.now()+5*60*1000,minutes:1};
+  await savePlayerData(); renderTrap(); showNotif('🪤 Trap set! Come back in 5 minutes!');
 };
 
 window.claimTrap = async function() {
