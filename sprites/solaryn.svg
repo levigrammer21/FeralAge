@@ -1,0 +1,63 @@
+<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;shape-rendering:crispEdges;">
+<style>
+@keyframes sunflare {
+  0%,100% { opacity:.45; transform:translateY(0px); }
+  50% { opacity:1; transform:translateY(-1px); }
+}
+@keyframes phoenix-float {
+  0%,100% { transform:translateY(0px); }
+  50% { transform:translateY(-1px); }
+}
+@keyframes wing-blaze {
+  0%,100% { opacity:.65; }
+  50% { opacity:1; }
+}
+</style>
+
+<!-- sun particles -->
+<rect x="2" y="3" width="1" height="1" fill="#fef3c7" style="animation:sunflare .9s infinite"/>
+<rect x="13" y="4" width="1" height="1" fill="#fde047" style="animation:sunflare 1.2s infinite .2s"/>
+<rect x="11" y="12" width="1" height="1" fill="#f97316" style="animation:sunflare 1.5s infinite .4s"/>
+
+<g style="animation:phoenix-float 1.6s ease-in-out infinite;">
+  <!-- blazing wings -->
+  <g style="animation:wing-blaze 1s ease-in-out infinite;">
+    <rect x="2" y="6" width="5" height="3" fill="#dc2626"/>
+    <rect x="3" y="5" width="4" height="2" fill="#f97316"/>
+    <rect x="4" y="4" width="2" height="1" fill="#fde047"/>
+    <rect x="9" y="6" width="5" height="3" fill="#dc2626"/>
+    <rect x="9" y="5" width="4" height="2" fill="#f97316"/>
+    <rect x="10" y="4" width="2" height="1" fill="#fde047"/>
+  </g>
+
+  <!-- body -->
+  <rect x="7" y="6" width="2" height="6" fill="#f97316"/>
+  <rect x="6" y="7" width="4" height="4" fill="#dc2626"/>
+
+  <!-- sun core -->
+  <rect x="7" y="8" width="2" height="2" fill="#fef3c7" style="animation:sunflare .7s infinite"/>
+
+  <!-- head -->
+  <rect x="6" y="4" width="4" height="3" fill="#facc15"/>
+  <rect x="7" y="3" width="2" height="2" fill="#fef3c7"/>
+
+  <!-- beak -->
+  <rect x="5" y="6" width="2" height="1" fill="#f97316"/>
+
+  <!-- eye -->
+  <rect x="7" y="5" width="1" height="1" fill="#000"/>
+
+  <!-- flame crest -->
+  <rect x="7" y="2" width="1" height="1" fill="#f97316" style="animation:sunflare .8s infinite"/>
+  <rect x="8" y="2" width="1" height="1" fill="#fde047" style="animation:sunflare 1s infinite .2s"/>
+
+  <!-- tail flames -->
+  <rect x="6" y="11" width="1" height="2" fill="#dc2626"/>
+  <rect x="7" y="12" width="1" height="2" fill="#f97316"/>
+  <rect x="8" y="11" width="1" height="3" fill="#fde047"/>
+  <rect x="9" y="12" width="1" height="2" fill="#fef3c7"/>
+</g>
+
+<!-- solar aura -->
+<rect x="3" y="4" width="10" height="9" fill="#fde047" opacity=".1" style="animation:sunflare 2s infinite"/>
+</svg>
