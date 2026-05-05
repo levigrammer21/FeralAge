@@ -1138,14 +1138,14 @@ function rollFishSize(avgLen, avgWt, sigma) {
 }
 function pickFish() {
   const roll = Math.random();
-  if(roll < 0.35)      return FISH_DATA.find(f=>f.id==='minnow');
-  if(roll < 0.55)      return FISH_DATA.find(f=>f.id==='crawfish');
-  if(roll < 0.72)      return FISH_DATA.find(f=>f.id==='sunfish');
-  if(roll < 0.84)      return FISH_DATA.find(f=>f.id==='pufferfish');
-  if(roll < 0.93)      return FISH_DATA.find(f=>f.id==='snapper');
-  if(roll < 0.975)     return FISH_DATA.find(f=>f.id==='riverfin');
-  if(roll < 0.994)     return FISH_DATA.find(f=>f.id==='deepfin');
-  if(roll < 0.999)     return FISH_DATA.find(f=>f.id==='kraken');
+  if(roll < 0.25)      return FISH_DATA.find(f=>f.id==='minnow');
+  if(roll < 0.40)      return FISH_DATA.find(f=>f.id==='crawfish');
+  if(roll < 0.55)      return FISH_DATA.find(f=>f.id==='sunfish');
+  if(roll < 0.68)      return FISH_DATA.find(f=>f.id==='pufferfish');
+  if(roll < 0.78)      return FISH_DATA.find(f=>f.id==='snapper');
+  if(roll < 0.85)     return FISH_DATA.find(f=>f.id==='riverfin');
+  if(roll < 0.92)     return FISH_DATA.find(f=>f.id==='deepfin');
+  if(roll < 0.98)     return FISH_DATA.find(f=>f.id==='kraken');
   return FISH_DATA.find(f=>f.id==='goldfish');
 }
 function updateBaitDisplay() {
@@ -1228,7 +1228,7 @@ function startRestHealing() {
 }
 
 // ===== ENERGY SYSTEM =====
-const ENERGY_MAX      = 7;
+const ENERGY_MAX      = 8;
 const ENERGY_REGEN_MS = 10 * 60 * 1000;
 
 function getFeralEnergy(feral) {
@@ -1710,8 +1710,8 @@ window.buyTrapUpgrade = async function(tierIdx) {
   showNotif(`${tier.icon} ${tier.name} unlocked!`,'var(--gold)');
 };
 window.setTrap = async function() {
-  playerData.trap={endTime:Date.now()+5*60*1000};
-  await savePlayerData(); renderTrap(); showNotif('🪤 Trap set! Come back in 5 minutes!');
+  playerData.trap={endTime:Date.now()+3*60*1000};
+  await savePlayerData(); renderTrap(); showNotif('🪤 Trap set! Come back in 3 minutes!');
 };
 window.claimTrap = async function() {
   const trap=playerData.trap; if(!trap) return;
@@ -2076,7 +2076,7 @@ async function finishBattle() {
     else if(lootRoll<38){ const c=allItems.filter(i=>i.rarity==='uncommon'); loot=c[Math.floor(Math.random()*c.length)]; }
     else if(lootRoll<45){ const c=allItems.filter(i=>i.rarity==='rare');   loot=c[Math.floor(Math.random()*c.length)]; }
     else if(lootRoll<48){ const c=allItems.filter(i=>i.rarity==='epic'||i.rarity==='legendary'); loot=c[Math.floor(Math.random()*c.length)]; }
-    const shardReward=isDungeon?rollRange(15,30):rollRange(1,10);
+    const shardReward=isDungeon?rollRange(15,30):rollRange(3,15);
     playerData.shards=(playerData.shards||0)+shardReward;
     playerData.tamerXp=(playerData.tamerXp||0)+20;
     playerData.totalShards=(playerData.totalShards||0)+shardReward;
