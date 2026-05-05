@@ -1137,9 +1137,16 @@ function rollFishSize(avgLen, avgWt, sigma) {
   };
 }
 function pickFish() {
-  const roll=Math.random(); let cumulative=0;
-  for(const fish of FISH_DATA){ cumulative+=fish.chance; if(roll<cumulative) return fish; }
-  return FISH_DATA[0];
+  const roll = Math.random();
+  if(roll < 0.35)      return FISH_DATA.find(f=>f.id==='minnow');
+  if(roll < 0.55)      return FISH_DATA.find(f=>f.id==='crawfish');
+  if(roll < 0.72)      return FISH_DATA.find(f=>f.id==='sunfish');
+  if(roll < 0.84)      return FISH_DATA.find(f=>f.id==='pufferfish');
+  if(roll < 0.93)      return FISH_DATA.find(f=>f.id==='snapper');
+  if(roll < 0.975)     return FISH_DATA.find(f=>f.id==='riverfin');
+  if(roll < 0.994)     return FISH_DATA.find(f=>f.id==='deepfin');
+  if(roll < 0.999)     return FISH_DATA.find(f=>f.id==='kraken');
+  return FISH_DATA.find(f=>f.id==='goldfish');
 }
 function updateBaitDisplay() {
   const el=document.getElementById('baitCount');
