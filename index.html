@@ -2631,7 +2631,6 @@ window.attemptCatch = function() {
   const fish=fishingPendingFish;
   const {length,weight}=rollFishSize(fish.avgLen,fish.avgWt,fish.sigma);
   const catchRecord={fishId:fish.id,name:fish.name,icon:fish.icon,rarity:fish.rarity,length,weight,caughtAt:Date.now()};
-  playerData.fishCaught=[...(playerData.fishCaught||[]),catchRecord];
   playerData.totalFishCaught=(playerData.totalFishCaught||0)+1;
   const prev=(playerData.fishRecords||{})[fish.id];
   const isRecord=!prev||length>prev.length;
